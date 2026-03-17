@@ -18,8 +18,11 @@ vendor/
 .env
 *.env.local
 
-# Frontend build
-web/dist/
+# Frontend build (ignore generated assets, keep placeholder)
+web/dist/*.js
+web/dist/*.css
+web/dist/*.woff*
+web/dist/assets/
 web/node_modules/
 web/.vite/
 
@@ -48,3 +51,4 @@ tmp/
 # Logs
 *.log
 logs/
+
