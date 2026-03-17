@@ -9,16 +9,14 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+
+	"github.com/hillscheck/internal/usecase/port"
 )
 
 type ReceiptUpload struct {
 	uploadDir string
-	pool      port
+	pool      port.WorkerPool
 	log       *zap.Logger
-}
-
-type port interface {
-	Submit(job func(ctx context.Context) error) error
 }
 
 type ReceiptUploadResult struct {
@@ -26,7 +24,7 @@ type ReceiptUploadResult struct {
 	FilePath  string
 }
 
-func NewReceiptUpload(uploadDir string, pool port, log *zap.Logger) (*ReceiptUpload, error) {
+func NewReceiptUpload(uploadDir string, pool port.WorkerPool, log *zap.Logger) (*ReceiptUpload, error) {
 	if err := os.MkdirAll(uploadDir, 0o750); err != nil {
 		return nil, fmt.Errorf("create upload dir: %w", err)
 	}
