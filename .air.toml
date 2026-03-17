@@ -1,0 +1,22 @@
+# Air configuration for hot reload (used in docker/Dockerfile.dev)
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/hillscheck ./cmd/server"
+  bin = "./tmp/hillscheck"
+  include_ext = ["go"]
+  exclude_dir = ["tmp", "vendor", "web"]
+  delay = 500
+
+[log]
+  time = true
+
+[color]
+  main = "magenta"
+  watcher = "cyan"
+  build = "yellow"
+  runner = "green"
+
+[misc]
+  clean_on_exit = true
