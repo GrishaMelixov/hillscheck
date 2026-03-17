@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-950 text-gray-100 font-mono antialiased;
+  }
+}
+
+@layer components {
+  .stat-bar {
+    @apply relative h-3 w-full rounded-full bg-gray-800 overflow-hidden;
+  }
+  .stat-bar-fill {
+    @apply h-full rounded-full transition-all duration-500;
+  }
+  .card {
+    @apply bg-gray-900 border border-gray-800 rounded-xl p-4;
+  }
+  .badge {
+    @apply inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-semibold;
+  }
+}
