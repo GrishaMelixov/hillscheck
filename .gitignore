@@ -1,0 +1,54 @@
+# Binaries
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go build artifacts
+*.test
+*.out
+/hillscheck
+
+# Go module cache
+vendor/
+
+# Environment & secrets
+.env
+*.env.local
+
+# Frontend build (ignore generated assets, keep placeholder)
+web/dist/*.js
+web/dist/*.css
+web/dist/*.woff*
+web/dist/assets/
+web/node_modules/
+web/.vite/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# AI tools
+.claude/
+.cursor/
+.aider*
+.copilot/
+.codeium/
+
+# Uploads
+uploads/
+tmp/
+
+# Logs
+*.log
+logs/
+
