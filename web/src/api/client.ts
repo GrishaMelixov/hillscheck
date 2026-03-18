@@ -166,3 +166,42 @@ export function importTransactions(accountId: string, rows: ImportTxRow[]) {
     { account_id: accountId, transactions: rows },
   )
 }
+
+// ── Screenshot / Vision ───────────────────────────────────────────────────────
+
+export interface VisionTransaction {
+  description: string
+  amount_cents: number
+  mcc: number
+  occurred_at: string   // ISO 8601
+  currency: string
+}
+
+export async function parseScreenshot(file: File): Promise<{ transactions: VisionTransaction[] }> {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const headers: Record<string, string> = {}
+  if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`
+
+  const res = await fetch('/api/v1/receipts/parse', {
+    method: 'POST',
+    headers,
+    body: formData,
+  })
+
+  if (res.status === 401 && accessToken) {
+    const refreshed = await restoreSession()
+    if (refreshed) {
+      headers['Authorization'] = `Bearer ${accessToken}`
+      const retry = await fetch('/api/v1/receipts/parse', { method: 'POST', headers, body: formData })
+      if (!retry.ok) throw new ApiError(retry.status, await retry.text())
+      return retry.json()
+    }
+    setAccessToken(null)
+    throw new ApiError(401, 'session expired')
+  }
+
+  if (!res.ok) throw new ApiError(res.status, await res.text())
+  return res.json()
+}

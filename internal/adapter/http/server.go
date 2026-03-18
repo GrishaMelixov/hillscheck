@@ -60,6 +60,7 @@ func NewRouter(
 		r.Get("/transactions", h.Transaction.List)
 
 		r.Post("/receipts/upload", h.Receipt.Upload)
+		r.Post("/receipts/parse", h.Receipt.Parse)
 
 		r.Get("/profile", h.Profile.Get)
 		r.Get("/quests", h.Quests.List)

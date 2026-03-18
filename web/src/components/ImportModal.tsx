@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { fetchAccounts, importTransactions } from '../api/client'
+import { fetchAccounts, importTransactions, parseScreenshot } from '../api/client'
 import { parseCSV } from '../utils/csvParser'
-import type { Account } from '../api/client'
+import type { Account, VisionTransaction } from '../api/client'
 import type { ParseResult } from '../utils/csvParser'
 
 interface Props {
@@ -9,7 +9,16 @@ interface Props {
   onImported: () => void
 }
 
-type Step = 'upload' | 'preview' | 'importing' | 'done'
+type Mode = 'csv' | 'screenshot'
+type Step = 'upload' | 'preview' | 'parsing' | 'importing' | 'done'
+
+interface PreviewRow {
+  externalId: string
+  description: string
+  amountCents: number
+  mcc: number
+  occurredAt: string
+}
 
 const FORMAT_LABEL: Record<string, { label: string; color: string }> = {
   tinkoff: { label: 'Тинькофф',     color: '#FFD60A' },
@@ -17,15 +26,22 @@ const FORMAT_LABEL: Record<string, { label: string; color: string }> = {
   generic: { label: 'Универсальный', color: 'rgba(255,255,255,0.4)' },
 }
 
+function makeExternalId(tx: VisionTransaction): string {
+  return `screenshot-${btoa(`${tx.description}|${tx.amount_cents}|${tx.occurred_at}`).replace(/=/g, '').slice(0, 24)}`
+}
+
 export default function ImportModal({ onClose, onImported }: Props) {
+  const [mode, setMode]               = useState<Mode>('csv')
   const [step, setStep]               = useState<Step>('upload')
   const [dragOver, setDragOver]       = useState(false)
   const [parseResult, setParseResult] = useState<ParseResult | null>(null)
+  const [visionRows, setVisionRows]   = useState<PreviewRow[]>([])
   const [accounts, setAccounts]       = useState<Account[]>([])
   const [accountId, setAccountId]     = useState('')
   const [importResult, setImportResult] = useState<{ created: number; duplicates: number } | null>(null)
   const [error, setError]             = useState('')
-  const fileRef = useRef<HTMLInputElement>(null)
+  const csvRef = useRef<HTMLInputElement>(null)
+  const imgRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     fetchAccounts()
@@ -36,7 +52,9 @@ export default function ImportModal({ onClose, onImported }: Props) {
       .catch(() => {})
   }, [])
 
-  const processFile = useCallback(async (file: File) => {
+  // ── CSV processing ──────────────────────────────────────────────────────────
+
+  const processCSV = useCallback(async (file: File) => {
     if (!file.name.toLowerCase().endsWith('.csv')) {
       setError('Загрузи CSV-файл')
       return
@@ -48,29 +66,79 @@ export default function ImportModal({ onClose, onImported }: Props) {
     setStep('preview')
   }, [])
 
-  const onDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(false)
-    const file = e.dataTransfer.files[0]
-    if (file) processFile(file)
-  }, [processFile])
+  // ── Screenshot processing ───────────────────────────────────────────────────
 
-  const onInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) processFile(file)
-  }, [processFile])
+  const processImage = useCallback(async (file: File) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
+    const ext = file.name.toLowerCase()
+    const ok = allowed.includes(file.type) ||
+      ext.endsWith('.jpg') || ext.endsWith('.jpeg') ||
+      ext.endsWith('.png') || ext.endsWith('.webp') ||
+      ext.endsWith('.heic') || ext.endsWith('.heif')
+    if (!ok) {
+      setError('Поддерживаются: JPEG, PNG, WEBP, HEIC')
+      return
+    }
+    setError('')
+    setStep('parsing')
+    try {
+      const data = await parseScreenshot(file)
+      if (!data.transactions?.length) {
+        setError('Транзакции не найдены на скриншоте')
+        setStep('upload')
+        return
+      }
+      const rows: PreviewRow[] = data.transactions.map(tx => ({
+        externalId:  makeExternalId(tx),
+        description: tx.description,
+        amountCents: tx.amount_cents,
+        mcc:         tx.mcc,
+        occurredAt:  tx.occurred_at,
+      }))
+      setVisionRows(rows)
+      setStep('preview')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Ошибка распознавания')
+      setStep('upload')
+    }
+  }, [])
+
+  // ── Drag & drop ─────────────────────────────────────────────────────────────
+
+  const onDropCSV = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); setDragOver(false)
+    const file = e.dataTransfer.files[0]
+    if (file) processCSV(file)
+  }, [processCSV])
+
+  const onDropImg = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); setDragOver(false)
+    const file = e.dataTransfer.files[0]
+    if (file) processImage(file)
+  }, [processImage])
+
+  // ── Import ──────────────────────────────────────────────────────────────────
 
   const handleImport = async () => {
-    if (!parseResult || !accountId) return
+    if (!accountId) return
     setStep('importing')
     try {
-      const rows = parseResult.transactions.map(tx => ({
-        external_id:          tx.externalId,
-        amount:               tx.amountCents,
-        mcc:                  tx.mcc,
-        original_description: tx.description,
-        occurred_at:          tx.occurredAt,
-      }))
+      const rows = mode === 'csv' && parseResult
+        ? parseResult.transactions.map(tx => ({
+            external_id:          tx.externalId,
+            amount:               tx.amountCents,
+            mcc:                  tx.mcc,
+            original_description: tx.description,
+            occurred_at:          tx.occurredAt,
+          }))
+        : visionRows.map(tx => ({
+            external_id:          tx.externalId,
+            amount:               tx.amountCents,
+            mcc:                  tx.mcc,
+            original_description: tx.description,
+            occurred_at:          tx.occurredAt,
+          }))
+
       const res = await importTransactions(accountId, rows)
       setImportResult(res)
       setStep('done')
@@ -80,6 +148,20 @@ export default function ImportModal({ onClose, onImported }: Props) {
     }
   }
 
+  const previewRows: PreviewRow[] = mode === 'csv' && parseResult
+    ? parseResult.transactions.map(tx => ({
+        externalId:  tx.externalId,
+        description: tx.description,
+        amountCents: tx.amountCents,
+        mcc:         tx.mcc,
+        occurredAt:  tx.occurredAt,
+      }))
+    : visionRows
+
+  const rowCount = previewRows.length
+
+  // ── Styles ──────────────────────────────────────────────────────────────────
+
   const modalStyle: React.CSSProperties = {
     background: 'rgba(12,12,14,0.92)',
     border: '1px solid rgba(255,255,255,0.10)',
@@ -87,6 +169,15 @@ export default function ImportModal({ onClose, onImported }: Props) {
     backdropFilter: 'blur(60px) saturate(1.8)',
     WebkitBackdropFilter: 'blur(60px) saturate(1.8)',
     boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 32px 80px rgba(0,0,0,0.8)',
+  }
+
+  const tabActive: React.CSSProperties = {
+    background: 'rgba(255,255,255,0.10)',
+    color: '#fff',
+  }
+
+  const tabInactive: React.CSSProperties = {
+    color: 'rgba(255,255,255,0.35)',
   }
 
   return (
@@ -106,17 +197,36 @@ export default function ImportModal({ onClose, onImported }: Props) {
           ×
         </button>
 
-        <h2 className="text-[17px] font-semibold mb-6" style={{ color: '#F5C518' }}>
+        <h2 className="text-[17px] font-semibold mb-5" style={{ color: '#F5C518' }}>
           Импорт транзакций
         </h2>
 
-        {/* ── UPLOAD ── */}
-        {step === 'upload' && (
+        {/* ── Mode tabs (only on upload step) ── */}
+        {(step === 'upload' || step === 'parsing') && (
           <div
-            onDrop={onDrop}
+            className="flex rounded-xl p-1 mb-5 gap-1"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
+          >
+            {([['csv', '📄 CSV'], ['screenshot', '📷 Скриншот']] as [Mode, string][]).map(([m, label]) => (
+              <button
+                key={m}
+                onClick={() => { setMode(m); setError('') }}
+                className="flex-1 py-2 text-[13px] font-medium rounded-lg transition-all"
+                style={mode === m ? tabActive : tabInactive}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* ── CSV UPLOAD ── */}
+        {step === 'upload' && mode === 'csv' && (
+          <div
+            onDrop={onDropCSV}
             onDragOver={e => { e.preventDefault(); setDragOver(true) }}
             onDragLeave={() => setDragOver(false)}
-            onClick={() => fileRef.current?.click()}
+            onClick={() => csvRef.current?.click()}
             className="rounded-2xl p-12 text-center cursor-pointer transition-all"
             style={{
               border: `2px dashed ${dragOver ? 'rgba(245,197,24,0.6)' : 'rgba(255,255,255,0.12)'}`,
@@ -128,45 +238,91 @@ export default function ImportModal({ onClose, onImported }: Props) {
             <p className="text-[12px] mt-2" style={{ color: 'rgba(255,255,255,0.30)' }}>
               Тинькофф · Сбер · Универсальный CSV
             </p>
-            {error && (
-              <p className="mt-3 text-[13px]" style={{ color: '#FF453A' }}>{error}</p>
-            )}
-            <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={onInput} />
+            {error && <p className="mt-3 text-[13px]" style={{ color: '#FF453A' }}>{error}</p>}
+            <input ref={csvRef} type="file" accept=".csv" className="hidden"
+              onChange={e => { const f = e.target.files?.[0]; if (f) processCSV(f) }} />
+          </div>
+        )}
+
+        {/* ── SCREENSHOT UPLOAD ── */}
+        {step === 'upload' && mode === 'screenshot' && (
+          <div
+            onDrop={onDropImg}
+            onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+            onDragLeave={() => setDragOver(false)}
+            onClick={() => imgRef.current?.click()}
+            className="rounded-2xl p-10 text-center cursor-pointer transition-all"
+            style={{
+              border: `2px dashed ${dragOver ? 'rgba(10,132,255,0.6)' : 'rgba(255,255,255,0.12)'}`,
+              background: dragOver ? 'rgba(10,132,255,0.05)' : 'rgba(255,255,255,0.02)',
+            }}
+          >
+            <div className="text-5xl mb-4 float">📱</div>
+            <p className="text-[15px] font-medium text-white/70">Скриншот из банковского приложения</p>
+            <p className="text-[12px] mt-2" style={{ color: 'rgba(255,255,255,0.30)' }}>
+              T‑Банк · Сбер · Кассовый чек · JPEG · PNG · WEBP · HEIC
+            </p>
+            <p className="text-[11px] mt-3 px-4" style={{ color: 'rgba(255,255,255,0.20)' }}>
+              Скриншот обрабатывается Gemini AI — транзакции распознаются автоматически
+            </p>
+            {error && <p className="mt-3 text-[13px]" style={{ color: '#FF453A' }}>{error}</p>}
+            <input ref={imgRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic,.heic,.heif" className="hidden"
+              onChange={e => { const f = e.target.files?.[0]; if (f) processImage(f) }} />
+          </div>
+        )}
+
+        {/* ── PARSING (AI in progress) ── */}
+        {step === 'parsing' && (
+          <div className="py-16 text-center space-y-4">
+            <div className="text-5xl float">🔍</div>
+            <p className="text-[15px] font-medium text-white/70">Распознаём скриншот…</p>
+            <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.30)' }}>
+              Gemini AI анализирует изображение
+            </p>
           </div>
         )}
 
         {/* ── PREVIEW ── */}
-        {step === 'preview' && parseResult && (
+        {step === 'preview' && (
           <div className="space-y-4">
-            {/* Format badge + count */}
+            {/* Header badge */}
             <div className="flex items-center gap-2 flex-wrap">
-              {(() => {
-                const fm = FORMAT_LABEL[parseResult.format] ?? FORMAT_LABEL.generic
-                return (
-                  <span
-                    className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
-                    style={{ color: fm.color, background: `${fm.color}18`, border: `1px solid ${fm.color}30` }}
-                  >
-                    {fm.label}
-                  </span>
-                )
-              })()}
+              {mode === 'csv' && parseResult ? (
+                (() => {
+                  const fm = FORMAT_LABEL[parseResult.format] ?? FORMAT_LABEL.generic
+                  return (
+                    <span
+                      className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
+                      style={{ color: fm.color, background: `${fm.color}18`, border: `1px solid ${fm.color}30` }}
+                    >
+                      {fm.label}
+                    </span>
+                  )
+                })()
+              ) : (
+                <span
+                  className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
+                  style={{ color: '#0A84FF', background: 'rgba(10,132,255,0.12)', border: '1px solid rgba(10,132,255,0.25)' }}
+                >
+                  📷 Скриншот
+                </span>
+              )}
               <span className="text-[13px]" style={{ color: 'rgba(255,255,255,0.40)' }}>
-                {parseResult.transactions.length} транзакций
-                {parseResult.errors.length > 0 && `, ${parseResult.errors.length} пропущено`}
+                {rowCount} транзакций
+                {mode === 'csv' && parseResult?.errors.length ? `, ${parseResult.errors.length} пропущено` : ''}
               </span>
             </div>
 
-            {parseResult.format === 'generic' && (
+            {mode === 'csv' && parseResult?.format === 'generic' && (
               <p
                 className="text-[12px] rounded-xl p-3"
                 style={{ color: '#FF9F0A', background: 'rgba(255,159,10,0.08)', border: '1px solid rgba(255,159,10,0.15)' }}
               >
-                Формат не распознан автоматически. Первые колонки: {parseResult.headers.slice(0, 4).join(', ')}
+                Формат не распознан. Первые колонки: {parseResult.headers.slice(0, 4).join(', ')}
               </p>
             )}
 
-            {/* Preview table */}
+            {/* Table */}
             <div
               className="overflow-auto rounded-2xl"
               style={{ maxHeight: '176px', border: '1px solid rgba(255,255,255,0.08)' }}
@@ -180,7 +336,7 @@ export default function ImportModal({ onClose, onImported }: Props) {
                   </tr>
                 </thead>
                 <tbody>
-                  {parseResult.transactions.slice(0, 8).map((tx, i) => (
+                  {previewRows.slice(0, 8).map((tx, i) => (
                     <tr key={i} style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
                       <td className="px-3 py-2 whitespace-nowrap" style={{ color: 'rgba(255,255,255,0.40)' }}>
                         {tx.occurredAt.slice(0, 10)}
@@ -193,10 +349,10 @@ export default function ImportModal({ onClose, onImported }: Props) {
                       </td>
                     </tr>
                   ))}
-                  {parseResult.transactions.length > 8 && (
+                  {rowCount > 8 && (
                     <tr style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
                       <td colSpan={3} className="px-3 py-2 text-center text-[11px]" style={{ color: 'rgba(255,255,255,0.20)' }}>
-                        … и ещё {parseResult.transactions.length - 8}
+                        … и ещё {rowCount - 8}
                       </td>
                     </tr>
                   )}
@@ -210,11 +366,7 @@ export default function ImportModal({ onClose, onImported }: Props) {
                 <label className="block text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.35)' }}>
                   Счёт
                 </label>
-                <select
-                  value={accountId}
-                  onChange={e => setAccountId(e.target.value)}
-                  className="input"
-                >
+                <select value={accountId} onChange={e => setAccountId(e.target.value)} className="input">
                   {accounts.map(a => (
                     <option key={a.id} value={a.id} style={{ background: '#1a1a1a' }}>
                       {a.name} ({a.currency})
@@ -232,10 +384,10 @@ export default function ImportModal({ onClose, onImported }: Props) {
               </button>
               <button
                 onClick={handleImport}
-                disabled={parseResult.transactions.length === 0 || !accountId}
+                disabled={rowCount === 0 || !accountId}
                 className="btn-primary flex-1 py-3"
               >
-                Импортировать {parseResult.transactions.length}
+                Импортировать {rowCount}
               </button>
             </div>
           </div>

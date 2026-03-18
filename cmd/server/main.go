@@ -101,6 +101,12 @@ func main() {
 		log.Fatal("init receipt uploader", zap.Error(err))
 	}
 
+	vision, err := ai.NewGeminiVision(cfg.GeminiAPIKey, cfg.GeminiModel)
+	if err != nil {
+		log.Fatal("init gemini vision", zap.Error(err))
+	}
+	defer vision.Close()
+
 	getProfile := usecase.NewGetProfile(gameRepo)
 	getQuests  := usecase.NewGetQuests(gameRepo, txRepo, accountRepo)
 
@@ -113,7 +119,7 @@ func main() {
 	handlers := adapthttp.Handlers{
 		Auth:        adapthttp.NewAuthHandler(registerUC, loginUC, refreshUC, logoutUC, log),
 		Transaction: adapthttp.NewTransactionHandler(importer, txRepo, accountRepo, log),
-		Receipt:     adapthttp.NewReceiptHandler(receiptUploader, log),
+		Receipt:     adapthttp.NewReceiptHandler(receiptUploader, vision, log),
 		Profile:     adapthttp.NewProfileHandler(getProfile, log),
 		Quests:      adapthttp.NewQuestHandler(getQuests, log),
 		WebSocket:   adapthttp.NewWebSocketHandler(hub, jwtSvc, log),
