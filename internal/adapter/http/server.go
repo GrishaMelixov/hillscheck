@@ -10,10 +10,12 @@ import (
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 
+	"github.com/hillscheck/internal/infrastructure/auth"
 	mw "github.com/hillscheck/internal/adapter/http/middleware"
 )
 
 type Handlers struct {
+	Auth        *AuthHandler
 	Transaction *TransactionHandler
 	Receipt     *ReceiptHandler
 	Profile     *ProfileHandler
@@ -25,6 +27,7 @@ type Handlers struct {
 // staticFiles is the embedded web/dist FS (pass nil to skip static serving).
 func NewRouter(
 	h Handlers,
+	jwt *auth.JWTService,
 	rdb *redis.Client,
 	log *zap.Logger,
 	staticFiles fs.FS,
@@ -38,9 +41,18 @@ func NewRouter(
 	r.Use(mw.RequestID)
 	r.Use(mw.RateLimit(rdb, 200, time.Minute))
 
-	// API routes
+	// Auth routes — no JWT required, tighter rate limit (10 req/min per IP)
+	r.Route("/auth", func(r chi.Router) {
+		r.Use(mw.RateLimit(rdb, 10, time.Minute))
+		r.Post("/register", h.Auth.Register)
+		r.Post("/login", h.Auth.Login)
+		r.Post("/refresh", h.Auth.Refresh)
+		r.Post("/logout", h.Auth.Logout)
+	})
+
+	// Protected API routes
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Use(mw.Auth)
+		r.Use(mw.NewAuth(jwt))
 
 		r.Post("/transactions/import", h.Transaction.Import)
 		r.Get("/transactions", h.Transaction.List)
@@ -51,23 +63,22 @@ func NewRouter(
 		r.Get("/quests", h.Quests.List)
 	})
 
-	// WebSocket — auth handled inside the handler via query param token.
+	// WebSocket — JWT validated inside handler via ?token= query param
 	r.Get("/ws", h.WebSocket.ServeWS)
 
-	// Health check — no auth required.
+	// Health check — no auth required
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"status":"ok"}`))
 	})
 
-	// Serve embedded React SPA — must be last.
+	// Serve embedded React SPA — must be last
 	if staticFiles != nil {
 		fileServer := http.FileServer(http.FS(staticFiles))
 		r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
 			_, err := staticFiles.Open(r.URL.Path)
 			if err != nil {
-				// SPA fallback: serve index.html for client-side routing.
 				r.URL.Path = "/"
 			}
 			fileServer.ServeHTTP(w, r)

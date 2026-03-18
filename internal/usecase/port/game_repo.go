@@ -7,6 +7,7 @@ import (
 )
 
 type GameRepository interface {
+	CreateProfile(ctx context.Context, userID string) (domain.GameProfile, error)
 	GetProfile(ctx context.Context, userID string) (domain.GameProfile, error)
 
 	// ApplyEvent atomically writes the GameEvent and updates game_profiles

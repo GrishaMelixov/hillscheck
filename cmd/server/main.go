@@ -18,6 +18,7 @@ import (
 	"github.com/hillscheck/internal/adapter/ai"
 	"github.com/hillscheck/internal/adapter/postgres"
 	adapws "github.com/hillscheck/internal/adapter/websocket"
+	"github.com/hillscheck/internal/infrastructure/auth"
 	"github.com/hillscheck/internal/infrastructure/cache"
 	"github.com/hillscheck/internal/infrastructure/config"
 	"github.com/hillscheck/internal/infrastructure/db"
@@ -86,6 +87,10 @@ func main() {
 	hub := adapws.NewHub(log)
 	go hub.Run()
 
+	// ── Auth infrastructure ───────────────────────────────────────────────────
+	jwtSvc     := auth.NewJWTService(cfg.JWTSecret)
+	tokenStore := auth.NewRedisTokenStore(rdb)
+
 	// ── Use cases ─────────────────────────────────────────────────────────────
 	engine := usecase.NewGameEngine(txRepo, accountRepo, gameRepo, classifier, hub, log)
 
@@ -99,10 +104,14 @@ func main() {
 	getProfile := usecase.NewGetProfile(gameRepo)
 	getQuests  := usecase.NewGetQuests(gameRepo, txRepo, accountRepo)
 
-	_ = userRepo // used in future auth handlers
+	registerUC := usecase.NewRegisterUser(userRepo, gameRepo)
+	loginUC    := usecase.NewLoginUser(userRepo, jwtSvc, tokenStore)
+	refreshUC  := usecase.NewRefreshToken(userRepo, jwtSvc, tokenStore)
+	logoutUC   := usecase.NewLogout(tokenStore)
 
 	// ── HTTP handlers ─────────────────────────────────────────────────────────
 	handlers := adapthttp.Handlers{
+		Auth:        adapthttp.NewAuthHandler(registerUC, loginUC, refreshUC, logoutUC, log),
 		Transaction: adapthttp.NewTransactionHandler(importer, txRepo, accountRepo, log),
 		Receipt:     adapthttp.NewReceiptHandler(receiptUploader, log),
 		Profile:     adapthttp.NewProfileHandler(getProfile, log),
@@ -116,7 +125,7 @@ func main() {
 		log.Fatal("sub static fs", zap.Error(err))
 	}
 
-	router := adapthttp.NewRouter(handlers, rdb, log, distFS)
+	router := adapthttp.NewRouter(handlers, jwtSvc, rdb, log, distFS)
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.Port,
