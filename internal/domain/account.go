@@ -11,12 +11,12 @@ const (
 )
 
 type Account struct {
-	ID        string
-	UserID    string
-	Name      string
-	Type      AccountType
-	Balance   int64  // stored in cents; int64, never float
-	Currency  string // ISO 4217, e.g. "USD"
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID        string      `json:"id"`
+	UserID    string      `json:"user_id"`
+	Name      string      `json:"name"`
+	Type      AccountType `json:"type"`
+	Balance   int64       `json:"balance"`
+	Currency  string      `json:"currency"`
+	CreatedAt time.Time   `json:"created_at"`
+	UpdatedAt time.Time   `json:"updated_at"`
 }

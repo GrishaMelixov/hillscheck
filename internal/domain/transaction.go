@@ -11,15 +11,15 @@ const (
 )
 
 type Transaction struct {
-	ID                  string
-	ExternalID          string   // idempotency key from the client / bank
-	AccountID           string
-	Amount              int64    // cents; negative = spend, positive = income
-	MCC                 int      // ISO 18245 merchant category code
-	OriginalDescription string
-	CleanCategory       string   // assigned after classification
-	Status              TxStatus
-	OccurredAt          time.Time
-	CreatedAt           time.Time
-	UpdatedAt           time.Time
+	ID                  string    `json:"id"`
+	ExternalID          string    `json:"external_id"`
+	AccountID           string    `json:"account_id"`
+	Amount              int64     `json:"amount"`
+	MCC                 int       `json:"mcc"`
+	OriginalDescription string    `json:"original_description"`
+	CleanCategory       string    `json:"clean_category"`
+	Status              TxStatus  `json:"status"`
+	OccurredAt          time.Time `json:"occurred_at"`
+	CreatedAt           time.Time `json:"created_at"`
+	UpdatedAt           time.Time `json:"updated_at"`
 }

@@ -3,15 +3,15 @@ package domain
 import "time"
 
 type GameProfile struct {
-	UserID    string
-	Level     int
-	XP        int64
-	HP        int
-	Mana      int
-	Strength  int
-	Intellect int
-	Luck      int
-	UpdatedAt time.Time
+	UserID    string    `json:"user_id"`
+	Level     int       `json:"level"`
+	XP        int64     `json:"xp"`
+	HP        int       `json:"hp"`
+	Mana      int       `json:"mana"`
+	Strength  int       `json:"strength"`
+	Intellect int       `json:"intellect"`
+	Luck      int       `json:"luck"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // XPForNextLevel returns the XP threshold needed to reach the next level.
