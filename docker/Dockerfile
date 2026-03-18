@@ -3,7 +3,9 @@ FROM node:24-alpine AS frontend
 WORKDIR /app/web
 COPY web/package*.json ./
 RUN npm ci
-COPY web/ ./
+COPY web/src ./src
+COPY web/public ./public
+COPY web/index.html web/vite.config.ts web/tailwind.config.ts web/tsconfig.json ./
 RUN npm run build
 
 # Stage 2: Build Go binary
