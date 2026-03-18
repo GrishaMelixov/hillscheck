@@ -82,8 +82,10 @@ func NewRouter(
 	if staticFiles != nil {
 		fileServer := http.FileServer(http.FS(staticFiles))
 		r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
-			clean := strings.TrimPrefix(r.URL.Path, "/")
-			if _, err := staticFiles.Open(clean); err != nil {
+			// fs.FS paths must not start with '/'.
+			fsPath := strings.TrimPrefix(r.URL.Path, "/")
+			if _, err := staticFiles.Open(fsPath); err != nil {
+				// SPA fallback: unknown path → serve index.html for client-side routing.
 				r.URL.Path = "/"
 			}
 			fileServer.ServeHTTP(w, r)
