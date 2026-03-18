@@ -32,7 +32,7 @@ func (r *TransactionRepo) CreateIfNotExists(
 		VALUES ($1, $2, $3, $4, $5, $6)
 		ON CONFLICT (account_id, external_id) DO NOTHING
 		RETURNING id, external_id, account_id, amount, mcc,
-		          original_description, clean_category, status, occurred_at, created_at, updated_at`
+		          original_description, COALESCE(clean_category, ''), status, occurred_at, created_at, updated_at`
 
 	var tx domain.Transaction
 	err := r.pool.QueryRow(ctx, q,
@@ -56,7 +56,7 @@ func (r *TransactionRepo) CreateIfNotExists(
 func (r *TransactionRepo) getByExternalID(ctx context.Context, accountID, externalID string) (domain.Transaction, error) {
 	const q = `
 		SELECT id, external_id, account_id, amount, mcc,
-		       original_description, clean_category, status, occurred_at, created_at, updated_at
+		       original_description, COALESCE(clean_category, ''), status, occurred_at, created_at, updated_at
 		FROM transactions WHERE account_id = $1 AND external_id = $2`
 
 	var tx domain.Transaction
@@ -74,7 +74,7 @@ func (r *TransactionRepo) getByExternalID(ctx context.Context, accountID, extern
 func (r *TransactionRepo) GetByID(ctx context.Context, id string) (domain.Transaction, error) {
 	const q = `
 		SELECT id, external_id, account_id, amount, mcc,
-		       original_description, clean_category, status, occurred_at, created_at, updated_at
+		       original_description, COALESCE(clean_category, ''), status, occurred_at, created_at, updated_at
 		FROM transactions WHERE id = $1`
 
 	var tx domain.Transaction
@@ -111,7 +111,7 @@ func (r *TransactionRepo) UpdateStatus(ctx context.Context, id string, status do
 func (r *TransactionRepo) ListByAccount(ctx context.Context, accountID string, limit, offset int) ([]domain.Transaction, error) {
 	const q = `
 		SELECT id, external_id, account_id, amount, mcc,
-		       original_description, clean_category, status, occurred_at, created_at, updated_at
+		       original_description, COALESCE(clean_category, ''), status, occurred_at, created_at, updated_at
 		FROM transactions
 		WHERE account_id = $1
 		ORDER BY occurred_at DESC
