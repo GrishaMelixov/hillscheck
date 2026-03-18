@@ -132,7 +132,10 @@ func (h *TransactionHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = mw.GetRequestID(r.Context())
-	jsonOK(w, http.StatusOK, txs)
+	if txs == nil {
+		txs = []domain.Transaction{}
+	}
+	jsonOK(w, http.StatusOK, map[string]any{"transactions": txs})
 }
 
 func (h *TransactionHandler) ListAccounts(w http.ResponseWriter, r *http.Request) {

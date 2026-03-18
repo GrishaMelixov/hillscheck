@@ -116,7 +116,7 @@ func main() {
 		Receipt:     adapthttp.NewReceiptHandler(receiptUploader, log),
 		Profile:     adapthttp.NewProfileHandler(getProfile, log),
 		Quests:      adapthttp.NewQuestHandler(getQuests, log),
-		WebSocket:   adapthttp.NewWebSocketHandler(hub, log),
+		WebSocket:   adapthttp.NewWebSocketHandler(hub, jwtSvc, log),
 	}
 
 	// ── Embedded static files ─────────────────────────────────────────────────
