@@ -106,7 +106,7 @@ func (h *TransactionHandler) Import(w http.ResponseWriter, r *http.Request) {
 
 func (h *TransactionHandler) List(w http.ResponseWriter, r *http.Request) {
 	accountID := r.URL.Query().Get("account_id")
-	if accountID == "" {
+	if accountID == "" || accountID == "undefined" || accountID == "null" {
 		jsonError(w, "account_id query param is required", http.StatusBadRequest)
 		return
 	}
