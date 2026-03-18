@@ -3,7 +3,7 @@ package port
 import (
 	"context"
 
-	"github.com/hillscheck/internal/domain"
+	"github.com/GrishaMelixov/wealthcheck/internal/domain"
 )
 
 type CreateAccountParams struct {

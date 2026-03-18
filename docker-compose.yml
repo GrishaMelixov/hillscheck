@@ -18,15 +18,15 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB:       hillscheck
-      POSTGRES_USER:     hillscheck
+      POSTGRES_DB:       wealthcheck
+      POSTGRES_USER:     wealthcheck
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U hillscheck"]
+      test: ["CMD-SHELL", "pg_isready -U wealthcheck"]
       interval: 5s
       timeout: 5s
       retries: 10

@@ -27,7 +27,9 @@ const FORMAT_LABEL: Record<string, { label: string; color: string }> = {
 }
 
 function makeExternalId(tx: VisionTransaction): string {
-  return `screenshot-${btoa(`${tx.description}|${tx.amount_cents}|${tx.occurred_at}`).replace(/=/g, '').slice(0, 24)}`
+  // Use only ASCII-safe fields — btoa can't handle Cyrillic
+  const ts = tx.occurred_at.replace(/\D/g, '').slice(0, 12)
+  return `scr-${tx.amount_cents}-${ts}`
 }
 
 export default function ImportModal({ onClose, onImported }: Props) {

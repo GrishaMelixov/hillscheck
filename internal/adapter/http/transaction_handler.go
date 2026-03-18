@@ -9,10 +9,10 @@ import (
 
 	"go.uber.org/zap"
 
-	mw "github.com/hillscheck/internal/adapter/http/middleware"
-	"github.com/hillscheck/internal/domain"
-	"github.com/hillscheck/internal/usecase"
-	"github.com/hillscheck/internal/usecase/port"
+	mw "github.com/GrishaMelixov/wealthcheck/internal/adapter/http/middleware"
+	"github.com/GrishaMelixov/wealthcheck/internal/domain"
+	"github.com/GrishaMelixov/wealthcheck/internal/usecase"
+	"github.com/GrishaMelixov/wealthcheck/internal/usecase/port"
 )
 
 type TransactionHandler struct {

@@ -6,8 +6,8 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/hillscheck/internal/infrastructure/auth"
-	"github.com/hillscheck/internal/usecase/port"
+	"github.com/GrishaMelixov/wealthcheck/internal/infrastructure/auth"
+	"github.com/GrishaMelixov/wealthcheck/internal/usecase/port"
 )
 
 type RefreshToken struct {

@@ -8,8 +8,8 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/hillscheck/internal/domain"
-	"github.com/hillscheck/internal/usecase/port"
+	"github.com/GrishaMelixov/wealthcheck/internal/domain"
+	"github.com/GrishaMelixov/wealthcheck/internal/usecase/port"
 )
 
 type RegisterUser struct {

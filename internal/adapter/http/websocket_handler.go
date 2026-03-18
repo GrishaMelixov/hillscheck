@@ -5,8 +5,8 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/hillscheck/internal/adapter/websocket"
-	"github.com/hillscheck/internal/infrastructure/auth"
+	"github.com/GrishaMelixov/wealthcheck/internal/adapter/websocket"
+	"github.com/GrishaMelixov/wealthcheck/internal/infrastructure/auth"
 )
 
 type WebSocketHandler struct {

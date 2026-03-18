@@ -11,8 +11,8 @@ import (
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 
-	"github.com/hillscheck/internal/infrastructure/auth"
-	mw "github.com/hillscheck/internal/adapter/http/middleware"
+	"github.com/GrishaMelixov/wealthcheck/internal/infrastructure/auth"
+	mw "github.com/GrishaMelixov/wealthcheck/internal/adapter/http/middleware"
 )
 
 type Handlers struct {

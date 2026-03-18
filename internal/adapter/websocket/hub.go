@@ -8,7 +8,7 @@ import (
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
 
-	"github.com/hillscheck/internal/domain"
+	"github.com/GrishaMelixov/wealthcheck/internal/domain"
 )
 
 var upgrader = websocket.Upgrader{

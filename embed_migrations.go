@@ -1,4 +1,4 @@
-package hillscheck
+package wealthcheck
 
 // migrationsFS is embedded alongside StaticFiles so that main.go can access
 // both web/dist and migrations via the same package-level embed.FS.

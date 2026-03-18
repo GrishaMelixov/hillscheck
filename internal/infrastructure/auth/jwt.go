@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/hillscheck/internal/domain"
+	"github.com/GrishaMelixov/wealthcheck/internal/domain"
 )
 
 const (

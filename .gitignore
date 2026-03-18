@@ -9,7 +9,7 @@ bin/
 # Go build artifacts
 *.test
 *.out
-/hillscheck
+/wealthcheck
 
 # Go module cache
 vendor/

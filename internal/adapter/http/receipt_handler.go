@@ -7,9 +7,9 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/hillscheck/internal/adapter/ai"
-	mw "github.com/hillscheck/internal/adapter/http/middleware"
-	"github.com/hillscheck/internal/usecase"
+	"github.com/GrishaMelixov/wealthcheck/internal/adapter/ai"
+	mw "github.com/GrishaMelixov/wealthcheck/internal/adapter/http/middleware"
+	"github.com/GrishaMelixov/wealthcheck/internal/usecase"
 )
 
 type ReceiptHandler struct {

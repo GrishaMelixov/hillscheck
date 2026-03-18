@@ -1,4 +1,4 @@
-module github.com/hillscheck
+module github.com/GrishaMelixov/wealthcheck
 
 go 1.25.0
 

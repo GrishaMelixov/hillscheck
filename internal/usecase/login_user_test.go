@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hillscheck/internal/domain"
-	"github.com/hillscheck/internal/infrastructure/auth"
-	"github.com/hillscheck/internal/usecase"
+	"github.com/GrishaMelixov/wealthcheck/internal/domain"
+	"github.com/GrishaMelixov/wealthcheck/internal/infrastructure/auth"
+	"github.com/GrishaMelixov/wealthcheck/internal/usecase"
 )
 
 // ── Mock TokenStore ────────────────────────────────────────────────────────────

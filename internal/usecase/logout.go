@@ -3,7 +3,7 @@ package usecase
 import (
 	"context"
 
-	"github.com/hillscheck/internal/usecase/port"
+	"github.com/GrishaMelixov/wealthcheck/internal/usecase/port"
 )
 
 type Logout struct {
