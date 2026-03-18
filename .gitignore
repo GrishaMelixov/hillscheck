@@ -43,6 +43,7 @@ web/.vite/
 .aider*
 .copilot/
 .codeium/
+CLAUDE.md
 
 # Uploads
 uploads/
