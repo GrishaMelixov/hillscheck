@@ -101,11 +101,10 @@ func main() {
 		log.Fatal("init receipt uploader", zap.Error(err))
 	}
 
-	vision, err := ai.NewGeminiVision(cfg.GeminiAPIKey, cfg.GeminiModel)
+	vision, err := ai.NewTesseractVision()
 	if err != nil {
-		log.Fatal("init gemini vision", zap.Error(err))
+		log.Fatal("init tesseract vision", zap.Error(err))
 	}
-	defer vision.Close()
 
 	getProfile := usecase.NewGetProfile(gameRepo)
 	getQuests  := usecase.NewGetQuests(gameRepo, txRepo, accountRepo)

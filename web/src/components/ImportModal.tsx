@@ -98,7 +98,12 @@ export default function ImportModal({ onClose, onImported }: Props) {
       setVisionRows(rows)
       setStep('preview')
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Ошибка распознавания')
+      let msg = 'Ошибка распознавания'
+      if (err instanceof Error) {
+        try { msg = (JSON.parse(err.message) as { error?: string }).error ?? err.message }
+        catch { msg = err.message }
+      }
+      setError(msg)
       setStep('upload')
     }
   }, [])

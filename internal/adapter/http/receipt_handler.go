@@ -14,11 +14,11 @@ import (
 
 type ReceiptHandler struct {
 	uploader *usecase.ReceiptUpload
-	vision   *ai.GeminiVision
+	vision   ai.VisionParser
 	log      *zap.Logger
 }
 
-func NewReceiptHandler(uploader *usecase.ReceiptUpload, vision *ai.GeminiVision, log *zap.Logger) *ReceiptHandler {
+func NewReceiptHandler(uploader *usecase.ReceiptUpload, vision ai.VisionParser, log *zap.Logger) *ReceiptHandler {
 	return &ReceiptHandler{uploader: uploader, vision: vision, log: log}
 }
 
@@ -88,7 +88,11 @@ func (h *ReceiptHandler) Parse(w http.ResponseWriter, r *http.Request) {
 	txs, err := h.vision.ParseScreenshot(r.Context(), data, mimeType)
 	if err != nil {
 		h.log.Error("gemini vision parse", zap.Error(err))
-		jsonError(w, "failed to parse screenshot: "+err.Error(), http.StatusUnprocessableEntity)
+		errMsg := "Не удалось распознать скриншот"
+		if strings.Contains(err.Error(), "429") || strings.Contains(err.Error(), "quota") || strings.Contains(err.Error(), "Quota") {
+			errMsg = "Превышена квота Gemini API — включи billing на ai.google.dev"
+		}
+		jsonError(w, errMsg, http.StatusUnprocessableEntity)
 		return
 	}
 
