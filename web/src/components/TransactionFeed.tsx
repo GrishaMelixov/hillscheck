@@ -1,13 +1,4 @@
-import React from 'react'
-
-interface Transaction {
-  id: string
-  original_description: string
-  clean_category: string
-  amount: number
-  status: 'pending' | 'processed' | 'failed'
-  occurred_at: string
-}
+import type { Transaction } from '../api/client'
 
 const ATTR_ICONS: Record<string, string> = {
   xp:        '⭐',
@@ -59,7 +50,7 @@ export function TransactionFeed({ transactions }: Props) {
               <p className={`text-sm font-semibold ${tx.amount < 0 ? 'text-red-400' : 'text-green-400'}`}>
                 {formatAmount(tx.amount)}
               </p>
-              <p className={`text-xs ${statusColor(tx.status)}`}>{tx.status}</p>
+              <p className={`text-xs ${statusColor(tx.status ?? '')}`}>{tx.status}</p>
             </div>
           </li>
         ))}
