@@ -3,6 +3,7 @@ package http
 import (
 	"io/fs"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -74,12 +75,14 @@ func NewRouter(
 		_, _ = w.Write([]byte(`{"status":"ok"}`))
 	})
 
-	// Serve embedded React SPA — must be last
+	// Serve embedded React SPA — must be last.
+	// embed.FS rejects paths with a leading slash (fs.ValidPath rule),
+	// so strip it before checking whether the asset exists.
 	if staticFiles != nil {
 		fileServer := http.FileServer(http.FS(staticFiles))
 		r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
-			_, err := staticFiles.Open(r.URL.Path)
-			if err != nil {
+			clean := strings.TrimPrefix(r.URL.Path, "/")
+			if _, err := staticFiles.Open(clean); err != nil {
 				r.URL.Path = "/"
 			}
 			fileServer.ServeHTTP(w, r)
