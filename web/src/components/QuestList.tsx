@@ -1,5 +1,3 @@
-import React from 'react'
-
 interface Quest {
   id: string
   title: string

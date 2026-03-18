@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { Avatar } from '../components/Avatar'
 import { TransactionFeed } from '../components/TransactionFeed'
 import { QuestList } from '../components/QuestList'

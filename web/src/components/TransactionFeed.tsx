@@ -1,5 +1,3 @@
-import React from 'react'
-
 interface Transaction {
   id: string
   original_description: string

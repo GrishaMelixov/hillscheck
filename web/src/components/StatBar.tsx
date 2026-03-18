@@ -1,5 +1,3 @@
-import React from 'react'
-
 interface StatBarProps {
   label: string
   value: number
