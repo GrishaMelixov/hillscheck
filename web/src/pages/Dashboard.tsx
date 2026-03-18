@@ -1,83 +1,108 @@
-import React, { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Avatar } from '../components/Avatar'
 import { TransactionFeed } from '../components/TransactionFeed'
 import { QuestList } from '../components/QuestList'
 import { useWebSocket } from '../hooks/useWebSocket'
+import { useAuth } from '../context/AuthContext'
+import { fetchProfile, fetchQuests, fetchTransactions, getAccessToken } from '../api/client'
+import type { Profile, Quest, Transaction } from '../api/client'
 
-const DEMO_PROFILE = {
-  level: 3,
-  xp: 540,
-  hp: 72,
-  mana: 45,
-  strength: 14,
-  intellect: 22,
-  luck: 11,
-}
-
-const DEMO_QUESTS = [
-  {
-    id: 'quest-read-books',
-    title: 'Scholar',
-    description: 'Buy 3 books or courses this month',
-    attribute: 'intellect',
-    reward: 50,
-    progress: 66,
-  },
-  {
-    id: 'quest-gym',
-    title: 'Warrior',
-    description: 'Visit the gym 3 times',
-    attribute: 'strength',
-    reward: 40,
-    progress: 33,
-  },
+const SKILL_CATEGORIES = [
+  { name: 'Food',          icon: '🍕', color: '#dc2626', key: 'food' },
+  { name: 'Learning',      icon: '📖', color: '#16a34a', key: 'learning' },
+  { name: 'Health',        icon: '💊', color: '#2563eb', key: 'health' },
+  { name: 'Sports',        icon: '🏋️', color: '#7c3aed', key: 'sports' },
+  { name: 'Entertainment', icon: '🎮', color: '#f5c518', key: 'entertainment' },
+  { name: 'Shopping',      icon: '🛍',  color: '#ea580c', key: 'shopping' },
 ]
 
 export default function Dashboard() {
-  const [profile, setProfile] = useState(DEMO_PROFILE)
-  const [transactions] = useState<never[]>([])
-  const [quests] = useState(DEMO_QUESTS)
+  const { logout, user } = useAuth()
+  const navigate = useNavigate()
 
-  // Replace 'demo-token' with real auth token once auth is implemented.
-  const token = 'demo-token'
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [quests, setQuests] = useState<Quest[]>([])
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [loadingProfile, setLoadingProfile] = useState(true)
+  const [error, setError] = useState('')
 
-  const handleWsMessage = useCallback((type: string, payload: unknown) => {
-    if (type === 'profile_update') {
-      setProfile(payload as typeof DEMO_PROFILE)
-    }
+  // Load initial data
+  useEffect(() => {
+    Promise.all([fetchProfile(), fetchQuests(), fetchTransactions()])
+      .then(([p, q, t]) => {
+        setProfile(p)
+        setQuests(q.quests ?? [])
+        setTransactions(t.transactions ?? [])
+      })
+      .catch(() => setError('Не удалось загрузить данные'))
+      .finally(() => setLoadingProfile(false))
   }, [])
 
-  useWebSocket(token, handleWsMessage)
+  // Real-time profile updates via WebSocket
+  const handleWsMessage = useCallback((type: string, payload: unknown) => {
+    if (type === 'profile_update') setProfile(payload as Profile)
+  }, [])
+
+  useWebSocket(getAccessToken(), handleWsMessage)
+
+  const handleLogout = async () => {
+    await logout()
+    navigate('/login')
+  }
+
+  // Build skill-tree counts from real transactions
+  const skillCounts = SKILL_CATEGORIES.map(skill => ({
+    ...skill,
+    value: transactions.filter(tx =>
+      tx.clean_category?.toLowerCase().includes(skill.key)
+    ).length,
+  }))
+
+  if (loadingProfile) {
+    return (
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <p className="text-gray-500 text-sm animate-pulse">Загружаем персонажа...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <p className="text-red-400 text-sm">{error}</p>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-950">
-      {/* Header */}
       <header className="border-b border-gray-800 px-6 py-3 flex items-center justify-between">
         <span className="text-rpg-gold font-bold tracking-widest text-lg">⚔ HILLSCHECK</span>
-        <span className="text-xs text-gray-500">Level {profile.level} Adventurer</span>
+        <div className="flex items-center gap-4">
+          {profile && (
+            <span className="text-xs text-gray-500">Level {profile.level} Adventurer</span>
+          )}
+          <button
+            onClick={handleLogout}
+            className="text-xs text-gray-500 hover:text-gray-300 transition"
+          >
+            Выйти {user?.name ? `(${user.name})` : ''}
+          </button>
+        </div>
       </header>
 
-      {/* Main grid */}
       <main className="max-w-5xl mx-auto px-4 py-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Left column */}
         <div className="md:col-span-1 space-y-4">
-          <Avatar profile={profile} />
+          {profile && <Avatar profile={profile} />}
           <QuestList quests={quests} />
         </div>
 
-        {/* Right column */}
         <div className="md:col-span-2 space-y-4">
           <div className="card">
             <h2 className="text-sm text-gray-400 uppercase tracking-wider mb-4">Skill Tree</h2>
             <div className="grid grid-cols-3 gap-3 text-center">
-              {[
-                { name: 'Food', icon: '🍕', value: 12, color: '#dc2626' },
-                { name: 'Learning', icon: '📖', value: 28, color: '#16a34a' },
-                { name: 'Health', icon: '💊', value: 8, color: '#2563eb' },
-                { name: 'Sports', icon: '🏋️', value: 15, color: '#7c3aed' },
-                { name: 'Entertainment', icon: '🎮', value: 6, color: '#f5c518' },
-                { name: 'Shopping', icon: '🛍', value: 22, color: '#ea580c' },
-              ].map((skill) => (
+              {skillCounts.map((skill) => (
                 <div key={skill.name} className="bg-gray-800 rounded-lg p-3">
                   <div className="text-2xl mb-1">{skill.icon}</div>
                   <div className="text-xs text-gray-400 mb-1">{skill.name}</div>
