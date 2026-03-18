@@ -13,16 +13,17 @@ import (
 
 	"go.uber.org/zap"
 
-	hillscheck "github.com/hillscheck"
-	adapthttp "github.com/hillscheck/internal/adapter/http"
-	"github.com/hillscheck/internal/adapter/ai"
-	"github.com/hillscheck/internal/adapter/postgres"
-	adapws "github.com/hillscheck/internal/adapter/websocket"
-	"github.com/hillscheck/internal/infrastructure/cache"
-	"github.com/hillscheck/internal/infrastructure/config"
-	"github.com/hillscheck/internal/infrastructure/db"
-	"github.com/hillscheck/internal/infrastructure/worker"
-	"github.com/hillscheck/internal/usecase"
+	hillscheck "github.com/GrishaMelixov/wealthcheck"
+	adapthttp "github.com/GrishaMelixov/wealthcheck/internal/adapter/http"
+	"github.com/GrishaMelixov/wealthcheck/internal/adapter/ai"
+	"github.com/GrishaMelixov/wealthcheck/internal/adapter/postgres"
+	adapws "github.com/GrishaMelixov/wealthcheck/internal/adapter/websocket"
+	"github.com/GrishaMelixov/wealthcheck/internal/infrastructure/auth"
+	"github.com/GrishaMelixov/wealthcheck/internal/infrastructure/cache"
+	"github.com/GrishaMelixov/wealthcheck/internal/infrastructure/config"
+	"github.com/GrishaMelixov/wealthcheck/internal/infrastructure/db"
+	"github.com/GrishaMelixov/wealthcheck/internal/infrastructure/worker"
+	"github.com/GrishaMelixov/wealthcheck/internal/usecase"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -86,6 +87,10 @@ func main() {
 	hub := adapws.NewHub(log)
 	go hub.Run()
 
+	// ── Auth infrastructure ───────────────────────────────────────────────────
+	jwtSvc     := auth.NewJWTService(cfg.JWTSecret)
+	tokenStore := auth.NewRedisTokenStore(rdb)
+
 	// ── Use cases ─────────────────────────────────────────────────────────────
 	engine := usecase.NewGameEngine(txRepo, accountRepo, gameRepo, classifier, hub, log)
 
@@ -96,18 +101,27 @@ func main() {
 		log.Fatal("init receipt uploader", zap.Error(err))
 	}
 
+	vision, err := ai.NewTesseractVision()
+	if err != nil {
+		log.Fatal("init tesseract vision", zap.Error(err))
+	}
+
 	getProfile := usecase.NewGetProfile(gameRepo)
 	getQuests  := usecase.NewGetQuests(gameRepo, txRepo, accountRepo)
 
-	_ = userRepo // used in future auth handlers
+	registerUC := usecase.NewRegisterUser(userRepo, gameRepo, accountRepo)
+	loginUC    := usecase.NewLoginUser(userRepo, jwtSvc, tokenStore)
+	refreshUC  := usecase.NewRefreshToken(userRepo, jwtSvc, tokenStore)
+	logoutUC   := usecase.NewLogout(tokenStore)
 
 	// ── HTTP handlers ─────────────────────────────────────────────────────────
 	handlers := adapthttp.Handlers{
+		Auth:        adapthttp.NewAuthHandler(registerUC, loginUC, refreshUC, logoutUC, log),
 		Transaction: adapthttp.NewTransactionHandler(importer, txRepo, accountRepo, log),
-		Receipt:     adapthttp.NewReceiptHandler(receiptUploader, log),
+		Receipt:     adapthttp.NewReceiptHandler(receiptUploader, vision, log),
 		Profile:     adapthttp.NewProfileHandler(getProfile, log),
 		Quests:      adapthttp.NewQuestHandler(getQuests, log),
-		WebSocket:   adapthttp.NewWebSocketHandler(hub, log),
+		WebSocket:   adapthttp.NewWebSocketHandler(hub, jwtSvc, log),
 	}
 
 	// ── Embedded static files ─────────────────────────────────────────────────
@@ -116,7 +130,7 @@ func main() {
 		log.Fatal("sub static fs", zap.Error(err))
 	}
 
-	router := adapthttp.NewRouter(handlers, rdb, log, distFS)
+	router := adapthttp.NewRouter(handlers, jwtSvc, rdb, log, distFS)
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.Port,

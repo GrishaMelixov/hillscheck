@@ -10,7 +10,7 @@ import (
 	"github.com/google/generative-ai-go/genai"
 	"google.golang.org/api/option"
 
-	"github.com/hillscheck/internal/usecase/port"
+	"github.com/GrishaMelixov/wealthcheck/internal/usecase/port"
 )
 
 type GeminiProvider struct {

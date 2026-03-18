@@ -1,4 +1,4 @@
-package hillscheck
+package wealthcheck
 
 import "embed"
 

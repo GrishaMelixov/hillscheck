@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/hillscheck/internal/domain"
-	"github.com/hillscheck/internal/usecase/port"
+	"github.com/GrishaMelixov/wealthcheck/internal/domain"
+	"github.com/GrishaMelixov/wealthcheck/internal/usecase/port"
 )
 
 // Pool is a fixed-size goroutine pool backed by a buffered channel.

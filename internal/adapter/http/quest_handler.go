@@ -5,8 +5,8 @@ import (
 
 	"go.uber.org/zap"
 
-	mw "github.com/hillscheck/internal/adapter/http/middleware"
-	"github.com/hillscheck/internal/usecase"
+	mw "github.com/GrishaMelixov/wealthcheck/internal/adapter/http/middleware"
+	"github.com/GrishaMelixov/wealthcheck/internal/usecase"
 )
 
 type QuestHandler struct {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hillscheck/internal/domain"
-	"github.com/hillscheck/internal/usecase/port"
+	"github.com/GrishaMelixov/wealthcheck/internal/domain"
+	"github.com/GrishaMelixov/wealthcheck/internal/usecase/port"
 )
 
 // Quest is a generated challenge based on spending patterns.

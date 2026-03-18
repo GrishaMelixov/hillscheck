@@ -1,6 +1,6 @@
 package port
 
-import "github.com/hillscheck/internal/domain"
+import "github.com/GrishaMelixov/wealthcheck/internal/domain"
 
 // Notifier pushes real-time updates to connected clients via WebSocket.
 type Notifier interface {

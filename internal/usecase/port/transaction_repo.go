@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/hillscheck/internal/domain"
+	"github.com/GrishaMelixov/wealthcheck/internal/domain"
 )
 
 type CreateTransactionParams struct {

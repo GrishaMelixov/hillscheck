@@ -11,10 +11,12 @@ import (
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 
-	mw "github.com/hillscheck/internal/adapter/http/middleware"
+	"github.com/GrishaMelixov/wealthcheck/internal/infrastructure/auth"
+	mw "github.com/GrishaMelixov/wealthcheck/internal/adapter/http/middleware"
 )
 
 type Handlers struct {
+	Auth        *AuthHandler
 	Transaction *TransactionHandler
 	Receipt     *ReceiptHandler
 	Profile     *ProfileHandler
@@ -26,6 +28,7 @@ type Handlers struct {
 // staticFiles is the embedded web/dist FS (pass nil to skip static serving).
 func NewRouter(
 	h Handlers,
+	jwt *auth.JWTService,
 	rdb *redis.Client,
 	log *zap.Logger,
 	staticFiles fs.FS,
@@ -39,23 +42,34 @@ func NewRouter(
 	r.Use(mw.RequestID)
 	r.Use(mw.RateLimit(rdb, 200, time.Minute))
 
-	// API routes
-	r.Route("/api/v1", func(r chi.Router) {
-		r.Use(mw.Auth)
+	// Auth routes — no JWT required, tighter rate limit (10 req/min per IP)
+	r.Route("/auth", func(r chi.Router) {
+		r.Use(mw.RateLimit(rdb, 10, time.Minute))
+		r.Post("/register", h.Auth.Register)
+		r.Post("/login", h.Auth.Login)
+		r.Post("/refresh", h.Auth.Refresh)
+		r.Post("/logout", h.Auth.Logout)
+	})
 
+	// Protected API routes
+	r.Route("/api/v1", func(r chi.Router) {
+		r.Use(mw.NewAuth(jwt))
+
+		r.Get("/accounts", h.Transaction.ListAccounts)
 		r.Post("/transactions/import", h.Transaction.Import)
 		r.Get("/transactions", h.Transaction.List)
 
 		r.Post("/receipts/upload", h.Receipt.Upload)
+		r.Post("/receipts/parse", h.Receipt.Parse)
 
 		r.Get("/profile", h.Profile.Get)
 		r.Get("/quests", h.Quests.List)
 	})
 
-	// WebSocket — auth handled inside the handler via query param token.
+	// WebSocket — JWT validated inside handler via ?token= query param
 	r.Get("/ws", h.WebSocket.ServeWS)
 
-	// Health check — no auth required.
+	// Health check — no auth required
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -63,6 +77,8 @@ func NewRouter(
 	})
 
 	// Serve embedded React SPA — must be last.
+	// embed.FS rejects paths with a leading slash (fs.ValidPath rule),
+	// so strip it before checking whether the asset exists.
 	if staticFiles != nil {
 		fileServer := http.FileServer(http.FS(staticFiles))
 		r.Get("/*", func(w http.ResponseWriter, r *http.Request) {

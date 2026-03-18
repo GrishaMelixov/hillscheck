@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/hillscheck/internal/domain"
+	"github.com/GrishaMelixov/wealthcheck/internal/domain"
 )
 
 type GameRepo struct {
@@ -17,6 +17,24 @@ type GameRepo struct {
 
 func NewGameRepo(pool *pgxpool.Pool) *GameRepo {
 	return &GameRepo{pool: pool}
+}
+
+func (r *GameRepo) CreateProfile(ctx context.Context, userID string) (domain.GameProfile, error) {
+	const q = `
+		INSERT INTO game_profiles (user_id, level, xp, hp, mana, strength, intellect, luck)
+		VALUES ($1, 1, 0, 100, 50, 10, 10, 10)
+		ON CONFLICT (user_id) DO NOTHING
+		RETURNING user_id, level, xp, hp, mana, strength, intellect, luck, updated_at`
+
+	var p domain.GameProfile
+	err := r.pool.QueryRow(ctx, q, userID).Scan(
+		&p.UserID, &p.Level, &p.XP, &p.HP, &p.Mana,
+		&p.Strength, &p.Intellect, &p.Luck, &p.UpdatedAt,
+	)
+	if err != nil {
+		return domain.GameProfile{}, fmt.Errorf("create game profile: %w", err)
+	}
+	return p, nil
 }
 
 func (r *GameRepo) GetProfile(ctx context.Context, userID string) (domain.GameProfile, error) {

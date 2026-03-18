@@ -4,27 +4,44 @@ import (
 	"context"
 	"net/http"
 	"strings"
+
+	"github.com/GrishaMelixov/wealthcheck/internal/domain"
+	"github.com/GrishaMelixov/wealthcheck/internal/infrastructure/auth"
 )
 
 type userIDKey struct{}
+type userPlanKey struct{}
 
-// Auth is a minimal JWT-stub middleware.
-// In production this should validate the JWT and extract the user ID.
-func Auth(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-		if token == "" {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
-			return
-		}
-		// TODO: validate JWT, extract real userID from claims.
-		// For now we use the token value itself as a placeholder userID.
-		ctx := context.WithValue(r.Context(), userIDKey{}, token)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+// NewAuth returns a middleware that validates JWT access tokens.
+func NewAuth(jwt *auth.JWTService) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			raw := r.Header.Get("Authorization")
+			token := strings.TrimPrefix(raw, "Bearer ")
+			if token == "" {
+				http.Error(w, "unauthorized", http.StatusUnauthorized)
+				return
+			}
+
+			claims, err := jwt.Validate(token)
+			if err != nil {
+				http.Error(w, "unauthorized", http.StatusUnauthorized)
+				return
+			}
+
+			ctx := context.WithValue(r.Context(), userIDKey{}, claims.UserID)
+			ctx = context.WithValue(ctx, userPlanKey{}, claims.Plan)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
 }
 
 func UserIDFromCtx(ctx context.Context) string {
 	id, _ := ctx.Value(userIDKey{}).(string)
 	return id
+}
+
+func PlanFromCtx(ctx context.Context) domain.Plan {
+	plan, _ := ctx.Value(userPlanKey{}).(domain.Plan)
+	return plan
 }

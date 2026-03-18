@@ -9,10 +9,10 @@ import (
 
 	"go.uber.org/zap"
 
-	mw "github.com/hillscheck/internal/adapter/http/middleware"
-	"github.com/hillscheck/internal/domain"
-	"github.com/hillscheck/internal/usecase"
-	"github.com/hillscheck/internal/usecase/port"
+	mw "github.com/GrishaMelixov/wealthcheck/internal/adapter/http/middleware"
+	"github.com/GrishaMelixov/wealthcheck/internal/domain"
+	"github.com/GrishaMelixov/wealthcheck/internal/usecase"
+	"github.com/GrishaMelixov/wealthcheck/internal/usecase/port"
 )
 
 type TransactionHandler struct {
@@ -106,7 +106,7 @@ func (h *TransactionHandler) Import(w http.ResponseWriter, r *http.Request) {
 
 func (h *TransactionHandler) List(w http.ResponseWriter, r *http.Request) {
 	accountID := r.URL.Query().Get("account_id")
-	if accountID == "" {
+	if accountID == "" || accountID == "undefined" || accountID == "null" {
 		jsonError(w, "account_id query param is required", http.StatusBadRequest)
 		return
 	}
@@ -132,7 +132,27 @@ func (h *TransactionHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = mw.GetRequestID(r.Context())
-	jsonOK(w, http.StatusOK, txs)
+	if txs == nil {
+		txs = []domain.Transaction{}
+	}
+	jsonOK(w, http.StatusOK, map[string]any{"transactions": txs})
+}
+
+func (h *TransactionHandler) ListAccounts(w http.ResponseWriter, r *http.Request) {
+	userID := mw.UserIDFromCtx(r.Context())
+	if userID == "" {
+		jsonError(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	accounts, err := h.accounts.ListByUser(r.Context(), userID)
+	if err != nil {
+		h.log.Error("list accounts", zap.Error(err))
+		jsonError(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	jsonOK(w, http.StatusOK, map[string]any{"accounts": accounts})
 }
 
 func jsonOK(w http.ResponseWriter, status int, v any) {

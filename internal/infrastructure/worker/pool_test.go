@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hillscheck/internal/infrastructure/worker"
+	"github.com/GrishaMelixov/wealthcheck/internal/infrastructure/worker"
 )
 
 func TestPool_ProcessesAllJobs(t *testing.T) {

@@ -1,30 +1,41 @@
-interface Transaction {
-  id: string
-  original_description: string
-  clean_category: string
-  amount: number
-  status: 'pending' | 'processed' | 'failed'
-  occurred_at: string
+import type { Transaction } from '../api/client'
+
+const CATEGORY_META: Record<string, { icon: string; color: string }> = {
+  food:          { icon: '🍕', color: '#FF453A' },
+  learning:      { icon: '📖', color: '#30D158' },
+  health:        { icon: '💊', color: '#0A84FF' },
+  sports:        { icon: '🏋️', color: '#BF5AF2' },
+  entertainment: { icon: '🎮', color: '#FFD60A' },
+  shopping:      { icon: '🛍️', color: '#FF9F0A' },
+  transport:     { icon: '🚕', color: '#5AC8FA' },
+  cafe:          { icon: '☕', color: '#FF9F0A' },
+  travel:        { icon: '✈️', color: '#5AC8FA' },
+  xp:            { icon: '⭐', color: '#FFD60A' },
+  hp:            { icon: '❤️', color: '#FF453A' },
+  mana:          { icon: '💎', color: '#0A84FF' },
+  strength:      { icon: '⚔️', color: '#BF5AF2' },
+  intellect:     { icon: '📖', color: '#30D158' },
+  luck:          { icon: '🍀', color: '#FFD60A' },
 }
 
-const ATTR_ICONS: Record<string, string> = {
-  xp:        '⭐',
-  hp:        '❤️',
-  mana:      '💎',
-  strength:  '⚔️',
-  intellect: '📖',
-  luck:      '🍀',
+function getCategoryMeta(category?: string) {
+  if (!category) return { icon: '💳', color: 'rgba(255,255,255,0.3)' }
+  const key = category.toLowerCase()
+  for (const [k, v] of Object.entries(CATEGORY_META)) {
+    if (key.includes(k)) return v
+  }
+  return { icon: '💳', color: 'rgba(255,255,255,0.3)' }
 }
 
 function formatAmount(cents: number): string {
-  const sign = cents < 0 ? '−' : '+'
-  return `${sign}$${(Math.abs(cents) / 100).toFixed(2)}`
+  const abs = (Math.abs(cents) / 100).toLocaleString('ru-RU', { minimumFractionDigits: 2 })
+  return cents < 0 ? `−${abs} ₽` : `+${abs} ₽`
 }
 
-function statusColor(status: string) {
-  if (status === 'processed') return 'text-green-400'
-  if (status === 'failed')    return 'text-red-400'
-  return 'text-yellow-400'
+function formatDate(iso?: string): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
 }
 
 interface Props {
@@ -32,36 +43,69 @@ interface Props {
 }
 
 export function TransactionFeed({ transactions }: Props) {
-  if (transactions.length === 0) {
-    return (
-      <div className="card text-center text-gray-500 py-8">
-        No transactions yet. Import your first batch!
-      </div>
-    )
-  }
-
   return (
-    <div className="card space-y-3">
-      <h2 className="text-sm text-gray-400 uppercase tracking-wider">Recent Transactions</h2>
-      <ul className="space-y-2">
-        {transactions.map((tx) => (
-          <li key={tx.id} className="flex items-center gap-3 bg-gray-800 rounded-lg px-3 py-2">
-            <span className="text-xl" title={tx.clean_category}>
-              {ATTR_ICONS[tx.clean_category?.toLowerCase()] ?? '💳'}
-            </span>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm truncate">{tx.original_description || 'Unknown'}</p>
-              <p className="text-xs text-gray-500">{tx.clean_category || 'Classifying…'}</p>
-            </div>
-            <div className="text-right shrink-0">
-              <p className={`text-sm font-semibold ${tx.amount < 0 ? 'text-red-400' : 'text-green-400'}`}>
-                {formatAmount(tx.amount)}
-              </p>
-              <p className={`text-xs ${statusColor(tx.status)}`}>{tx.status}</p>
-            </div>
-          </li>
-        ))}
-      </ul>
+    <div className="glass p-5 space-y-3">
+      <h2 className="section-label">Transactions</h2>
+
+      {transactions.length === 0 ? (
+        <div
+          className="rounded-2xl p-8 text-center"
+          style={{ border: '1px dashed rgba(255,255,255,0.10)', background: 'rgba(255,255,255,0.02)' }}
+        >
+          <p className="text-3xl mb-3 float">📂</p>
+          <p className="text-[13px] text-white/40">Транзакций ещё нет</p>
+          <p className="text-[11px] text-white/20 mt-1">Импортируй CSV из Тинькофф или Сбер</p>
+        </div>
+      ) : (
+        <ul className="space-y-1">
+          {transactions.map((tx) => {
+            const meta = getCategoryMeta(tx.clean_category)
+            const isPending = tx.status === 'pending'
+            const isDebit = tx.amount < 0
+            return (
+              <li
+                key={tx.id}
+                className="flex items-center gap-3 rounded-2xl px-3.5 py-3 transition-all cursor-default group"
+                style={{ background: 'rgba(255,255,255,0.03)' }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
+              >
+                {/* Icon */}
+                <div
+                  className="w-9 h-9 rounded-[11px] flex items-center justify-center shrink-0 text-[18px]"
+                  style={{ background: `${meta.color}18` }}
+                >
+                  {meta.icon}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-[14px] font-medium text-white/85 truncate leading-tight">
+                    {tx.original_description || 'Операция'}
+                  </p>
+                  <p className="text-[11px] mt-0.5">
+                    {isPending ? (
+                      <span className="pulse-dot" style={{ color: '#FF9F0A' }}>⚙ Классифицируется…</span>
+                    ) : (
+                      <span style={{ color: `${meta.color}99` }}>{tx.clean_category || '—'}</span>
+                    )}
+                  </p>
+                </div>
+
+                {/* Amount */}
+                <div className="text-right shrink-0">
+                  <p className={`text-[14px] font-semibold font-mono ${isDebit ? 'text-[#FF453A]' : 'text-[#30D158]'}`}>
+                    {formatAmount(tx.amount)}
+                  </p>
+                  <p className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.25)' }}>
+                    {formatDate(tx.created_at)}
+                  </p>
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      )}
     </div>
   )
 }
