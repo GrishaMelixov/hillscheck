@@ -21,6 +21,15 @@ func NewChainedProvider(log *zap.Logger, providers ...port.CategoryProvider) *Ch
 }
 
 func (c *ChainedProvider) Classify(ctx context.Context, description string, mcc int) (port.ClassificationResult, error) {
+	// ── Слой 1: детерминированная MCC-таблица (50+ категорий, точность 100%) ──
+	// Проверяем MCC первым. Если код известен — возвращаем сразу, LLM не нужен.
+	// Это и есть "гибридность": дорогой AI-вызов делается только для неизвестных MCC.
+	if entry, ok := LookupMCC(mcc); ok {
+		c.log.Debug("mcc table hit", zap.Int("mcc", mcc), zap.String("category", entry.Category))
+		return mccEntryToResult(entry), nil
+	}
+
+	// ── Слой 2: LLM провайдеры (Gemini → Ollama) ─────────────────────────────
 	var lastErr error
 	for _, p := range c.providers {
 		result, err := p.Classify(ctx, description, mcc)
@@ -31,31 +40,49 @@ func (c *ChainedProvider) Classify(ctx context.Context, description string, mcc 
 		lastErr = err
 	}
 
-	// Static fallback — always succeeds, never blocks the pipeline.
+	// ── Слой 3: статический fallback — pipeline никогда не блокируется ────────
 	c.log.Warn("all providers failed, using static fallback", zap.Error(lastErr))
 	return staticFallback(mcc), nil
 }
 
-// staticFallback maps common MCC ranges to deterministic RPG impacts.
-func staticFallback(mcc int) port.ClassificationResult {
-	switch {
-	case mcc >= 5940 && mcc <= 5949: // sporting goods
-		return result("Sports & Fitness", port.AttrStrength, 3)
-	case mcc >= 5940 && mcc <= 5945: // hobby/toy
-		return result("Hobby", port.AttrMana, 3)
-	case mcc == 5942: // book stores
-		return result("Books & Learning", port.AttrIntellect, 5)
-	case mcc >= 5811 && mcc <= 5814: // restaurants / fast food
-		return result("Dining", port.AttrHP, -2)
-	case mcc >= 8000 && mcc <= 8099: // health / medical
-		return result("Healthcare", port.AttrHP, 5)
-	case mcc >= 7993 && mcc <= 7999: // amusement / gambling
-		return result("Entertainment", port.AttrMana, 2)
-	case mcc >= 5200 && mcc <= 5211: // hardware / home improvement
-		return result("Home Improvement", port.AttrStrength, 2)
-	default:
-		return result("General Purchase", port.AttrXP, 1)
+// mccEntryToResult конвертирует запись из MCC-таблицы в ClassificationResult.
+// Выбирает доминирующий RPG-атрибут (с наибольшим abs-значением).
+func mccEntryToResult(e MCCEntry) port.ClassificationResult {
+	type kv struct {
+		attr string
+		val  int
 	}
+	candidates := []kv{
+		{port.AttrHP, e.HP},
+		{port.AttrStrength, e.Strength},
+		{port.AttrIntellect, e.Intellect},
+		{port.AttrMana, e.Mana},
+		{port.AttrLuck, e.Luck},
+		{port.AttrXP, e.XP},
+	}
+	best := kv{port.AttrXP, e.XP}
+	for _, c := range candidates {
+		if abs(c.val) > abs(best.val) {
+			best = c
+		}
+	}
+	if best.val == 0 {
+		best = kv{port.AttrXP, 1}
+	}
+	return result(e.Category, best.attr, best.val)
+}
+
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
+
+// staticFallback — последний рубеж, когда ни MCC-таблица, ни LLM не сработали.
+func staticFallback(mcc int) port.ClassificationResult {
+	_ = mcc // MCC уже был проверен в таблице выше — здесь он не нужен
+	return result(DefaultEntry.Category, port.AttrXP, DefaultEntry.XP)
 }
 
 func result(category, attribute string, value int) port.ClassificationResult {

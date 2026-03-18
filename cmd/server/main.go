@@ -67,10 +67,11 @@ func main() {
 	}
 
 	// ── Repositories ──────────────────────────────────────────────────────────
-	userRepo    := postgres.NewUserRepo(pgPool)
-	accountRepo := postgres.NewAccountRepo(pgPool)
-	txRepo      := postgres.NewTransactionRepo(pgPool)
-	gameRepo    := postgres.NewGameRepo(pgPool)
+	userRepo      := postgres.NewUserRepo(pgPool)
+	accountRepo   := postgres.NewAccountRepo(pgPool)
+	txRepo        := postgres.NewTransactionRepo(pgPool)
+	gameRepo      := postgres.NewGameRepo(pgPool)
+	analyticsRepo := postgres.NewAnalyticsRepo(pgPool)
 
 	// ── Category provider ─────────────────────────────────────────────────────
 	classifier, err := ai.NewProviderFromConfig(
@@ -106,8 +107,9 @@ func main() {
 		log.Fatal("init tesseract vision", zap.Error(err))
 	}
 
-	getProfile := usecase.NewGetProfile(gameRepo)
-	getQuests  := usecase.NewGetQuests(gameRepo, txRepo, accountRepo)
+	getProfile   := usecase.NewGetProfile(gameRepo)
+	getQuests    := usecase.NewGetQuests(gameRepo, txRepo, accountRepo)
+	getAnalytics := usecase.NewGetAnalytics(analyticsRepo, rdb, log)
 
 	registerUC := usecase.NewRegisterUser(userRepo, gameRepo, accountRepo)
 	loginUC    := usecase.NewLoginUser(userRepo, jwtSvc, tokenStore)
@@ -121,6 +123,7 @@ func main() {
 		Receipt:     adapthttp.NewReceiptHandler(receiptUploader, vision, log),
 		Profile:     adapthttp.NewProfileHandler(getProfile, log),
 		Quests:      adapthttp.NewQuestHandler(getQuests, log),
+		Analytics:   adapthttp.NewAnalyticsHandler(getAnalytics, log),
 		WebSocket:   adapthttp.NewWebSocketHandler(hub, jwtSvc, log),
 	}
 

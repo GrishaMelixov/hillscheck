@@ -21,6 +21,7 @@ type Handlers struct {
 	Receipt     *ReceiptHandler
 	Profile     *ProfileHandler
 	Quests      *QuestHandler
+	Analytics   *AnalyticsHandler
 	WebSocket   *WebSocketHandler
 }
 
@@ -64,6 +65,7 @@ func NewRouter(
 
 		r.Get("/profile", h.Profile.Get)
 		r.Get("/quests", h.Quests.List)
+		r.Get("/analytics/summary", h.Analytics.Summary)
 	})
 
 	// WebSocket — JWT validated inside handler via ?token= query param
