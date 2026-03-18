@@ -8,4 +8,8 @@ var (
 	ErrInvalidAmount     = errors.New("amount must be non-zero integer cents")
 	ErrPoolFull          = errors.New("worker pool queue is full")
 	ErrUnauthorized      = errors.New("unauthorized")
+	ErrEmailTaken        = errors.New("email already registered")
+	ErrWrongPassword     = errors.New("invalid email or password")
+	ErrTokenExpired      = errors.New("token expired")
+	ErrTokenInvalid      = errors.New("token invalid")
 )

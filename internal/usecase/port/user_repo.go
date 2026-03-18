@@ -7,14 +7,17 @@ import (
 )
 
 type CreateUserParams struct {
-	Name      string
-	EmailHash string
-	Settings  domain.UserSettings
+	Name         string
+	Email        string
+	EmailHash    string
+	PasswordHash string
+	Settings     domain.UserSettings
 }
 
 type UserRepository interface {
 	Create(ctx context.Context, p CreateUserParams) (domain.User, error)
 	GetByID(ctx context.Context, id string) (domain.User, error)
+	GetByEmail(ctx context.Context, email string) (domain.User, error)
 	GetByEmailHash(ctx context.Context, emailHash string) (domain.User, error)
 	Update(ctx context.Context, user domain.User) (domain.User, error)
 }
