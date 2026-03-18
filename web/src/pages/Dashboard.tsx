@@ -10,25 +10,25 @@ import { fetchProfile, fetchQuests, fetchAccounts, fetchTransactions, getAccessT
 import type { Profile, Quest, Transaction } from '../api/client'
 
 const SKILLS = [
-  { name: 'Еда',         icon: '🍕', color: '#ef4444', key: 'food'          },
-  { name: 'Обучение',    icon: '📖', color: '#34d399', key: 'learning'      },
-  { name: 'Здоровье',   icon: '💊', color: '#3b82f6', key: 'health'        },
-  { name: 'Спорт',      icon: '🏋️', color: '#a78bfa', key: 'sports'        },
-  { name: 'Развлечения', icon: '🎮', color: '#f5c518', key: 'entertainment' },
-  { name: 'Покупки',    icon: '🛍️', color: '#fb923c', key: 'shopping'      },
+  { name: 'Еда',          icon: '🍕', color: '#FF453A', key: 'food'          },
+  { name: 'Обучение',     icon: '📖', color: '#30D158', key: 'learning'      },
+  { name: 'Здоровье',     icon: '💊', color: '#0A84FF', key: 'health'        },
+  { name: 'Спорт',        icon: '🏋️', color: '#BF5AF2', key: 'sports'        },
+  { name: 'Развлечения',  icon: '🎮', color: '#FFD60A', key: 'entertainment' },
+  { name: 'Покупки',      icon: '🛍️', color: '#FF9F0A', key: 'shopping'      },
 ]
 
 export default function Dashboard() {
   const { logout, user } = useAuth()
   const navigate = useNavigate()
 
-  const [profile, setProfile]     = useState<Profile | null>(null)
-  const [quests, setQuests]       = useState<Quest[]>([])
+  const [profile, setProfile]           = useState<Profile | null>(null)
+  const [quests, setQuests]             = useState<Quest[]>([])
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [defaultAccountId, setDefaultAccountId] = useState<string | null>(null)
-  const [loading, setLoading]     = useState(true)
-  const [error, setError]         = useState('')
-  const [showImport, setShowImport] = useState(false)
+  const [loading, setLoading]           = useState(true)
+  const [error, setError]               = useState('')
+  const [showImport, setShowImport]     = useState(false)
 
   const loadTransactions = useCallback(async (accountId: string) => {
     try {
@@ -61,7 +61,7 @@ export default function Dashboard() {
   }, [])
   useWebSocket(getAccessToken(), handleWsMessage)
 
-  const handleLogout = async () => { await logout(); navigate('/login') }
+  const handleLogout   = async () => { await logout(); navigate('/login') }
   const handleImported = () => { if (defaultAccountId) loadTransactions(defaultAccountId) }
 
   const skillCounts = SKILLS.map(s => ({
@@ -70,23 +70,31 @@ export default function Dashboard() {
   }))
   const maxCount = Math.max(...skillCounts.map(s => s.count), 1)
 
+  /* ── Loading ── */
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="text-center space-y-3">
-          <div className="text-4xl animate-pulse">⚔️</div>
-          <p className="text-gray-500 text-sm tracking-widest uppercase">Загружаем персонажа…</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="text-5xl float">⚔️</div>
+          <p className="text-[13px] uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>
+            Загружаем персонажа…
+          </p>
         </div>
       </div>
     )
   }
 
+  /* ── Error ── */
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="text-center space-y-2">
-          <p className="text-red-400 text-sm">{error}</p>
-          <button onClick={loadAll} className="text-xs text-gray-500 hover:text-gray-300 underline">
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <p className="text-[14px]" style={{ color: '#FF453A' }}>{error}</p>
+          <button
+            onClick={loadAll}
+            className="text-[13px] underline transition-opacity hover:opacity-60"
+            style={{ color: 'rgba(255,255,255,0.4)' }}
+          >
             Попробовать снова
           </button>
         </div>
@@ -96,30 +104,51 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen">
+
       {/* ── Header ── */}
-      <header className="sticky top-0 z-30 border-b border-gray-800/60 bg-gray-950/80 backdrop-blur-md px-4 sm:px-6 py-3">
+      <header
+        className="sticky top-0 z-30 px-4 sm:px-6 py-4"
+        style={{
+          background: 'rgba(0,0,0,0.6)',
+          backdropFilter: 'blur(40px) saturate(1.8)',
+          WebkitBackdropFilter: 'blur(40px) saturate(1.8)',
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+        }}
+      >
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-rpg-gold font-bold tracking-widest text-base sm:text-lg">⚔ HILLSCHECK</span>
+          <div className="flex items-center gap-3">
+            <span
+              className="text-[18px] font-bold tracking-tight"
+              style={{ color: '#F5C518', letterSpacing: '-0.01em' }}
+            >
+              ⚔ HILLSCHECK
+            </span>
             {profile && (
-              <span className="hidden sm:inline-block ml-2 text-[10px] text-gray-600 border border-gray-800 rounded-full px-2 py-0.5 uppercase tracking-wider">
-                Lv.{profile.level} Adventurer
+              <span
+                className="hidden sm:inline-block text-[10px] font-semibold uppercase tracking-widest px-2.5 py-1 rounded-full"
+                style={{
+                  color: 'rgba(255,255,255,0.35)',
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                }}
+              >
+                Lv.{profile.level}
               </span>
             )}
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setShowImport(true)}
-              className="flex items-center gap-1.5 text-xs bg-rpg-gold text-gray-950 font-bold px-3 py-1.5 rounded-lg hover:brightness-110 active:scale-95 transition-all"
+              className="btn-primary text-[13px] px-4 py-2"
             >
-              <span>+</span>
+              <span className="mr-1.5">+</span>
               <span className="hidden sm:inline">Импорт CSV</span>
               <span className="sm:hidden">Импорт</span>
             </button>
             <button
               onClick={handleLogout}
-              className="text-xs text-gray-500 hover:text-gray-300 transition px-2 py-1.5 rounded-lg hover:bg-gray-800/50"
+              className="btn-glass text-[13px] px-4 py-2"
             >
               <span className="hidden sm:inline">Выйти </span>
               {user?.name ? `(${user.name})` : '↩'}
@@ -129,7 +158,7 @@ export default function Dashboard() {
       </header>
 
       {/* ── Main ── */}
-      <main className="max-w-5xl mx-auto px-4 py-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <main className="max-w-5xl mx-auto px-4 py-6 grid grid-cols-1 md:grid-cols-3 gap-4">
 
         {/* Left column */}
         <div className="md:col-span-1 space-y-4">
@@ -141,29 +170,39 @@ export default function Dashboard() {
         <div className="md:col-span-2 space-y-4">
 
           {/* Skill Tree */}
-          <div className="card">
-            <h2 className="section-label mb-4">🌳 Skill Tree</h2>
+          <div className="glass p-5">
+            <h2 className="section-label mb-4">Skill Tree</h2>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
               {skillCounts.map((skill) => {
                 const pct = Math.round((skill.count / maxCount) * 100)
                 return (
-                  <div key={skill.name}
-                    className="flex flex-col items-center gap-1.5 bg-gray-800/50 rounded-xl p-2.5 border border-gray-700/30 hover:border-gray-600/50 transition-colors"
+                  <div
+                    key={skill.name}
+                    className="flex flex-col items-center gap-2 rounded-2xl p-3 transition-all"
+                    style={{
+                      background: 'rgba(255,255,255,0.03)',
+                      border: '1px solid rgba(255,255,255,0.07)',
+                    }}
                   >
                     <div className="text-2xl">{skill.icon}</div>
-                    <div className="text-[10px] text-gray-500 text-center leading-tight">{skill.name}</div>
-                    {/* vertical bar */}
-                    <div className="w-full h-12 rounded-lg bg-gray-900/60 flex items-end overflow-hidden p-0.5">
+                    <div className="text-[10px] text-center leading-tight" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                      {skill.name}
+                    </div>
+                    {/* Vertical bar */}
+                    <div
+                      className="w-full rounded-xl overflow-hidden flex items-end"
+                      style={{ height: '48px', background: 'rgba(255,255,255,0.05)', padding: '2px' }}
+                    >
                       <div
-                        className="w-full rounded-md transition-all duration-700"
+                        className="w-full rounded-lg transition-all duration-700"
                         style={{
                           height: `${Math.max(pct, 4)}%`,
                           backgroundColor: skill.color,
-                          boxShadow: skill.count > 0 ? `0 0 8px ${skill.color}50` : 'none',
+                          boxShadow: skill.count > 0 ? `0 0 10px ${skill.color}50` : 'none',
                         }}
                       />
                     </div>
-                    <div className="text-xs font-bold" style={{ color: skill.color }}>
+                    <div className="text-[12px] font-bold" style={{ color: skill.color }}>
                       {skill.count}
                     </div>
                   </div>
@@ -177,13 +216,23 @@ export default function Dashboard() {
 
           {/* Empty state CTA */}
           {transactions.length === 0 && (
-            <div className="card border-dashed border-gray-700/50 text-center py-10 space-y-3">
-              <div className="text-5xl">📂</div>
-              <p className="text-gray-400 text-sm font-medium">Импортируй первые транзакции</p>
-              <p className="text-gray-600 text-xs">Поддерживается Тинькофф, Сбер и любой CSV</p>
+            <div
+              className="rounded-3xl p-10 text-center space-y-4"
+              style={{
+                border: '1px dashed rgba(255,255,255,0.10)',
+                background: 'rgba(255,255,255,0.02)',
+              }}
+            >
+              <div className="text-5xl float">📂</div>
+              <div>
+                <p className="text-[15px] font-semibold text-white/70">Импортируй первые транзакции</p>
+                <p className="text-[13px] mt-1" style={{ color: 'rgba(255,255,255,0.30)' }}>
+                  Поддерживается Тинькофф, Сбер и любой CSV
+                </p>
+              </div>
               <button
                 onClick={() => setShowImport(true)}
-                className="mt-2 inline-flex items-center gap-2 bg-rpg-gold text-gray-950 font-bold text-sm px-5 py-2 rounded-lg hover:brightness-110 transition"
+                className="btn-primary inline-flex"
               >
                 + Загрузить CSV
               </button>

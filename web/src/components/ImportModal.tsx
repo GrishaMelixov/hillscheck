@@ -11,10 +11,10 @@ interface Props {
 
 type Step = 'upload' | 'preview' | 'importing' | 'done'
 
-const FORMAT_LABEL: Record<string, string> = {
-  tinkoff: '🟡 Тинькофф',
-  sber:    '🟢 Сбер',
-  generic: '⚪ Универсальный',
+const FORMAT_LABEL: Record<string, { label: string; color: string }> = {
+  tinkoff: { label: 'Тинькофф',     color: '#FFD60A' },
+  sber:    { label: 'Сбербанк',     color: '#30D158' },
+  generic: { label: 'Универсальный', color: 'rgba(255,255,255,0.4)' },
 }
 
 export default function ImportModal({ onClose, onImported }: Props) {
@@ -33,7 +33,7 @@ export default function ImportModal({ onClose, onImported }: Props) {
         setAccounts(d.accounts ?? [])
         if (d.accounts?.length) setAccountId(d.accounts[0].id)
       })
-      .catch(() => {/* handled below during import */})
+      .catch(() => {})
   }, [])
 
   const processFile = useCallback(async (file: File) => {
@@ -44,9 +44,6 @@ export default function ImportModal({ onClose, onImported }: Props) {
     setError('')
     const text = await file.text()
     const result = parseCSV(text)
-    if (result.format === 'generic' && result.transactions.length === 0) {
-      // Generic format — we still show preview but warn
-    }
     setParseResult(result)
     setStep('preview')
   }, [])
@@ -83,17 +80,35 @@ export default function ImportModal({ onClose, onImported }: Props) {
     }
   }
 
+  const modalStyle: React.CSSProperties = {
+    background: 'rgba(12,12,14,0.92)',
+    border: '1px solid rgba(255,255,255,0.10)',
+    borderRadius: '28px',
+    backdropFilter: 'blur(60px) saturate(1.8)',
+    WebkitBackdropFilter: 'blur(60px) saturate(1.8)',
+    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 32px 80px rgba(0,0,0,0.8)',
+  }
+
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4">
-      <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg p-6 relative">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div className="w-full max-w-lg p-7 relative" style={modalStyle}>
+
+        {/* Close */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-300 text-xl leading-none"
+          className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full text-white/40 hover:text-white/70 transition-colors text-xl leading-none"
+          style={{ background: 'rgba(255,255,255,0.06)' }}
         >
           ×
         </button>
 
-        <h2 className="text-rpg-gold font-bold tracking-wider text-lg mb-5">⚔ Импорт транзакций</h2>
+        <h2 className="text-[17px] font-semibold mb-6" style={{ color: '#F5C518' }}>
+          Импорт транзакций
+        </h2>
 
         {/* ── UPLOAD ── */}
         {step === 'upload' && (
@@ -102,14 +117,20 @@ export default function ImportModal({ onClose, onImported }: Props) {
             onDragOver={e => { e.preventDefault(); setDragOver(true) }}
             onDragLeave={() => setDragOver(false)}
             onClick={() => fileRef.current?.click()}
-            className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition ${
-              dragOver ? 'border-rpg-gold bg-yellow-900/10' : 'border-gray-700 hover:border-gray-600'
-            }`}
+            className="rounded-2xl p-12 text-center cursor-pointer transition-all"
+            style={{
+              border: `2px dashed ${dragOver ? 'rgba(245,197,24,0.6)' : 'rgba(255,255,255,0.12)'}`,
+              background: dragOver ? 'rgba(245,197,24,0.05)' : 'rgba(255,255,255,0.02)',
+            }}
           >
-            <div className="text-5xl mb-4">📂</div>
-            <p className="text-gray-200 text-sm font-medium">Перетащи CSV или кликни для выбора</p>
-            <p className="text-gray-500 text-xs mt-2">Поддерживается: Тинькофф, Сбер, универсальный CSV</p>
-            {error && <p className="text-red-400 text-xs mt-3">{error}</p>}
+            <div className="text-5xl mb-4 float">📂</div>
+            <p className="text-[15px] font-medium text-white/70">Перетащи CSV или кликни</p>
+            <p className="text-[12px] mt-2" style={{ color: 'rgba(255,255,255,0.30)' }}>
+              Тинькофф · Сбер · Универсальный CSV
+            </p>
+            {error && (
+              <p className="mt-3 text-[13px]" style={{ color: '#FF453A' }}>{error}</p>
+            )}
             <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={onInput} />
           </div>
         )}
@@ -117,51 +138,64 @@ export default function ImportModal({ onClose, onImported }: Props) {
         {/* ── PREVIEW ── */}
         {step === 'preview' && parseResult && (
           <div className="space-y-4">
+            {/* Format badge + count */}
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-300 tracking-wider">
-                {FORMAT_LABEL[parseResult.format]}
-              </span>
-              <span className="text-gray-500 text-xs">
+              {(() => {
+                const fm = FORMAT_LABEL[parseResult.format] ?? FORMAT_LABEL.generic
+                return (
+                  <span
+                    className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
+                    style={{ color: fm.color, background: `${fm.color}18`, border: `1px solid ${fm.color}30` }}
+                  >
+                    {fm.label}
+                  </span>
+                )
+              })()}
+              <span className="text-[13px]" style={{ color: 'rgba(255,255,255,0.40)' }}>
                 {parseResult.transactions.length} транзакций
                 {parseResult.errors.length > 0 && `, ${parseResult.errors.length} пропущено`}
               </span>
             </div>
 
             {parseResult.format === 'generic' && (
-              <p className="text-yellow-400 text-xs bg-yellow-900/20 rounded p-2">
+              <p
+                className="text-[12px] rounded-xl p-3"
+                style={{ color: '#FF9F0A', background: 'rgba(255,159,10,0.08)', border: '1px solid rgba(255,159,10,0.15)' }}
+              >
                 Формат не распознан автоматически. Первые колонки: {parseResult.headers.slice(0, 4).join(', ')}
               </p>
             )}
 
             {/* Preview table */}
-            <div className="overflow-auto max-h-44 rounded-lg border border-gray-700">
-              <table className="text-xs w-full">
-                <thead className="bg-gray-800 text-gray-400 sticky top-0">
+            <div
+              className="overflow-auto rounded-2xl"
+              style={{ maxHeight: '176px', border: '1px solid rgba(255,255,255,0.08)' }}
+            >
+              <table className="text-[12px] w-full">
+                <thead style={{ background: 'rgba(255,255,255,0.05)' }}>
                   <tr>
-                    <th className="px-3 py-2 text-left">Дата</th>
-                    <th className="px-3 py-2 text-left">Описание</th>
-                    <th className="px-3 py-2 text-right">Сумма</th>
+                    <th className="px-3 py-2 text-left font-medium" style={{ color: 'rgba(255,255,255,0.40)' }}>Дата</th>
+                    <th className="px-3 py-2 text-left font-medium" style={{ color: 'rgba(255,255,255,0.40)' }}>Описание</th>
+                    <th className="px-3 py-2 text-right font-medium" style={{ color: 'rgba(255,255,255,0.40)' }}>Сумма</th>
                   </tr>
                 </thead>
                 <tbody>
                   {parseResult.transactions.slice(0, 8).map((tx, i) => (
-                    <tr key={i} className="border-t border-gray-800 hover:bg-gray-800/50">
-                      <td className="px-3 py-1.5 text-gray-400 whitespace-nowrap">
+                    <tr key={i} style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                      <td className="px-3 py-2 whitespace-nowrap" style={{ color: 'rgba(255,255,255,0.40)' }}>
                         {tx.occurredAt.slice(0, 10)}
                       </td>
-                      <td className="px-3 py-1.5 text-gray-200 max-w-[180px] truncate">
+                      <td className="px-3 py-2 max-w-[180px] truncate" style={{ color: 'rgba(255,255,255,0.75)' }}>
                         {tx.description || '—'}
                       </td>
-                      <td className={`px-3 py-1.5 text-right font-mono ${
-                        tx.amountCents < 0 ? 'text-red-400' : 'text-green-400'
-                      }`}>
+                      <td className={`px-3 py-2 text-right font-mono font-semibold ${tx.amountCents < 0 ? 'text-[#FF453A]' : 'text-[#30D158]'}`}>
                         {(tx.amountCents / 100).toFixed(2)}
                       </td>
                     </tr>
                   ))}
                   {parseResult.transactions.length > 8 && (
-                    <tr className="border-t border-gray-800">
-                      <td colSpan={3} className="px-3 py-1.5 text-gray-600 text-center text-xs">
+                    <tr style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                      <td colSpan={3} className="px-3 py-2 text-center text-[11px]" style={{ color: 'rgba(255,255,255,0.20)' }}>
                         … и ещё {parseResult.transactions.length - 8}
                       </td>
                     </tr>
@@ -172,15 +206,17 @@ export default function ImportModal({ onClose, onImported }: Props) {
 
             {/* Account selector */}
             {accounts.length > 0 && (
-              <div>
-                <label className="block text-xs text-gray-400 mb-1 uppercase tracking-wider">Счёт</label>
+              <div className="space-y-1.5">
+                <label className="block text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                  Счёт
+                </label>
                 <select
                   value={accountId}
                   onChange={e => setAccountId(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-rpg-gold"
+                  className="input"
                 >
                   {accounts.map(a => (
-                    <option key={a.id} value={a.id}>
+                    <option key={a.id} value={a.id} style={{ background: '#1a1a1a' }}>
                       {a.name} ({a.currency})
                     </option>
                   ))}
@@ -188,19 +224,16 @@ export default function ImportModal({ onClose, onImported }: Props) {
               </div>
             )}
 
-            {error && <p className="text-red-400 text-xs">{error}</p>}
+            {error && <p className="text-[13px]" style={{ color: '#FF453A' }}>{error}</p>}
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => setStep('upload')}
-                className="flex-1 py-2 rounded-lg border border-gray-700 text-sm text-gray-400 hover:text-gray-200 hover:border-gray-500 transition"
-              >
+            <div className="flex gap-3 pt-1">
+              <button onClick={() => setStep('upload')} className="btn-glass flex-1 py-3">
                 Назад
               </button>
               <button
                 onClick={handleImport}
                 disabled={parseResult.transactions.length === 0 || !accountId}
-                className="flex-1 py-2 rounded-lg bg-rpg-gold text-gray-950 font-bold text-sm hover:brightness-110 transition disabled:opacity-50"
+                className="btn-primary flex-1 py-3"
               >
                 Импортировать {parseResult.transactions.length}
               </button>
@@ -210,25 +243,29 @@ export default function ImportModal({ onClose, onImported }: Props) {
 
         {/* ── IMPORTING ── */}
         {step === 'importing' && (
-          <div className="py-14 text-center">
-            <div className="text-5xl mb-4 animate-bounce">⚙️</div>
-            <p className="text-gray-300 text-sm">Обрабатываем транзакции…</p>
-            <p className="text-gray-600 text-xs mt-2">AI классифицирует каждую</p>
+          <div className="py-16 text-center space-y-4">
+            <div className="text-5xl float">⚙️</div>
+            <p className="text-[15px] font-medium text-white/70">Обрабатываем транзакции…</p>
+            <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.30)' }}>
+              Классифицируем каждую операцию
+            </p>
           </div>
         )}
 
         {/* ── DONE ── */}
         {step === 'done' && importResult && (
-          <div className="py-10 text-center space-y-4">
-            <div className="text-5xl">⚔️</div>
-            <p className="text-rpg-gold font-bold text-xl tracking-wider">Готово!</p>
-            <div className="text-sm text-gray-400 space-y-1">
-              <p>Добавлено: <span className="text-green-400 font-bold">{importResult.created}</span></p>
-              <p>Дубликатов: <span className="text-gray-500">{importResult.duplicates}</span></p>
+          <div className="py-12 text-center space-y-5">
+            <div className="text-5xl">✅</div>
+            <div>
+              <p className="text-[20px] font-bold" style={{ color: '#F5C518' }}>Готово!</p>
+              <div className="mt-3 space-y-1 text-[14px]" style={{ color: 'rgba(255,255,255,0.50)' }}>
+                <p>Добавлено: <span className="font-bold text-[#30D158]">{importResult.created}</span></p>
+                <p>Дубликатов: <span className="font-semibold text-white/30">{importResult.duplicates}</span></p>
+              </div>
             </div>
             <button
               onClick={() => { onClose(); onImported() }}
-              className="mt-2 px-8 py-2 bg-rpg-gold text-gray-950 font-bold rounded-lg text-sm hover:brightness-110 transition"
+              className="btn-primary px-10 py-3"
             >
               На дашборд
             </button>

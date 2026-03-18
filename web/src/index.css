@@ -3,66 +3,181 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --accent: #F5C518;
+    --accent-rgb: 245, 197, 24;
+    --ios-blue: #0A84FF;
+    --glass-border: rgba(255,255,255,0.10);
+    --glass-bg: rgba(255,255,255,0.05);
+    --glass-bg-2: rgba(255,255,255,0.08);
+  }
+
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html {
+    background: #000;
+  }
+
   body {
-    @apply bg-gray-950 text-gray-100 font-mono antialiased;
-    background-image: radial-gradient(ellipse at 20% 20%, rgba(124, 58, 237, 0.06) 0%, transparent 60%),
-                      radial-gradient(ellipse at 80% 80%, rgba(245, 197, 24, 0.04) 0%, transparent 60%);
+    @apply bg-black text-white font-sans;
+    /* Subtle ambient light — very iOS */
+    background-image:
+      radial-gradient(ellipse 80% 50% at 15% 0%,   rgba(245,197,24,0.07)  0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 85% 100%,  rgba(10,132,255,0.06) 0%, transparent 60%);
+    min-height: 100svh;
   }
 }
 
 @layer components {
+
+  /* ─── Liquid Glass card ─────────────────────────────── */
+  .glass {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 1.5rem;
+    backdrop-filter: blur(48px) saturate(1.8);
+    -webkit-backdrop-filter: blur(48px) saturate(1.8);
+  }
+
+  .glass-sm {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 1rem;
+    backdrop-filter: blur(32px) saturate(1.6);
+    -webkit-backdrop-filter: blur(32px) saturate(1.6);
+  }
+
+  .glass-md {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 1.25rem;
+    backdrop-filter: blur(40px) saturate(1.8);
+    -webkit-backdrop-filter: blur(40px) saturate(1.8);
+  }
+
+  /* Gold shimmer inset on top edge */
+  .glass-gold {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 1.5rem;
+    backdrop-filter: blur(48px) saturate(1.8);
+    -webkit-backdrop-filter: blur(48px) saturate(1.8);
+    box-shadow: inset 0 1px 0 rgba(245,197,24,0.18), 0 1px 32px rgba(0,0,0,0.5);
+  }
+
+  /* ─── Legacy alias (so old code still works) ───────── */
+  .card      { @apply glass p-5; }
+  .card-glow { @apply glass-gold p-5; }
+
+  /* ─── Section labels ────────────────────────────────── */
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+  }
+
+  /* ─── Divider ────────────────────────────────────────── */
+  .divider {
+    height: 1px;
+    background: rgba(255,255,255,0.07);
+    margin: 0.75rem 0;
+  }
+
+  /* ─── Badge ─────────────────────────────────────────── */
+  .badge {
+    @apply inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full font-semibold;
+  }
+
+  /* ─── Buttons ────────────────────────────────────────── */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: -0.01em;
+    background: #F5C518;
+    color: #000;
+    border-radius: 14px;
+    padding: 12px 20px;
+    transition: filter 0.15s, transform 0.1s;
+    cursor: pointer;
+    border: none;
+  }
+  .btn-primary:hover  { filter: brightness(1.08); }
+  .btn-primary:active { transform: scale(0.97); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-glass {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.7);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 14px;
+    padding: 10px 16px;
+    backdrop-filter: blur(16px);
+    transition: background 0.15s, color 0.15s, transform 0.1s;
+    cursor: pointer;
+  }
+  .btn-glass:hover  { background: rgba(255,255,255,0.13); color: #fff; }
+  .btn-glass:active { transform: scale(0.97); }
+
+  /* ─── Input ─────────────────────────────────────────── */
+  .input {
+    width: 100%;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 15px;
+    color: #fff;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    font-family: inherit;
+    backdrop-filter: blur(16px);
+  }
+  .input::placeholder { color: rgba(255,255,255,0.25); }
+  .input:focus {
+    border-color: rgba(245,197,24,0.5);
+    box-shadow: 0 0 0 3px rgba(245,197,24,0.10);
+  }
+
+  /* ─── Stat bar ───────────────────────────────────────── */
   .stat-bar {
-    @apply relative h-2 w-full rounded-full bg-gray-800/80 overflow-hidden;
+    @apply relative w-full rounded-full overflow-hidden;
+    background: rgba(255,255,255,0.07);
   }
   .stat-bar-fill {
-    @apply h-full rounded-full transition-all duration-700;
-  }
-
-  /* Standard card */
-  .card {
-    @apply bg-gray-900/80 border border-gray-800/80 rounded-xl p-4 backdrop-blur-sm;
-  }
-
-  /* Gold-glow card */
-  .card-glow {
-    @apply bg-gray-900/80 border border-gray-800/60 rounded-xl p-4 backdrop-blur-sm;
-    box-shadow: inset 0 1px 0 rgba(245, 197, 24, 0.06);
-  }
-
-  /* Section header */
-  .section-label {
-    @apply text-xs text-gray-500 uppercase tracking-widest font-semibold;
-  }
-
-  .badge {
-    @apply inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-semibold;
-  }
-
-  /* Thin separator */
-  .divider {
-    @apply border-t border-gray-800/60 my-3;
+    height: 100%;
+    border-radius: 9999px;
+    transition: width 0.7s cubic-bezier(0.4,0,0.2,1);
   }
 }
 
-/* Gold glow on hover for interactive cards */
-.card-interactive {
-  transition: box-shadow 0.2s, border-color 0.2s;
-}
-.card-interactive:hover {
-  box-shadow: 0 0 0 1px rgba(245, 197, 24, 0.2), 0 4px 20px rgba(0,0,0,0.4);
-  border-color: rgba(245, 197, 24, 0.2);
-}
-
-/* Pulsing dot for "classifying" status */
+/* ─── Glow pulse animation ──────────────────────────── */
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.3; }
 }
-.pulse-dot {
-  animation: pulse-dot 1.5s ease-in-out infinite;
-}
+.pulse-dot { animation: pulse-dot 1.5s ease-in-out infinite; }
 
-/* Smooth glow bar animation */
+/* ─── Subtle float animation for empty states ───────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-6px); }
+}
+.float { animation: float 3s ease-in-out infinite; }
+
+/* ─── Number shimmer (for loading) ──────────────────── */
 @keyframes shimmer {
   0%   { background-position: -200% center; }
   100% { background-position:  200% center; }

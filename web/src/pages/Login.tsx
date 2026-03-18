@@ -21,56 +21,91 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <span className="text-rpg-gold font-bold tracking-widest text-2xl">⚔ HILLSCHECK</span>
-          <p className="text-gray-500 text-sm mt-2">Войди в свой аккаунт</p>
+    <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="w-full max-w-[380px]">
+
+        {/* Logo */}
+        <div className="text-center mb-10">
+          <div
+            className="inline-flex items-center justify-center w-16 h-16 rounded-[22px] text-3xl mb-5"
+            style={{
+              background: 'linear-gradient(135deg, rgba(245,197,24,0.2), rgba(10,132,255,0.15))',
+              border: '1px solid rgba(245,197,24,0.25)',
+              boxShadow: '0 0 40px rgba(245,197,24,0.12)',
+            }}
+          >
+            ⚔️
+          </div>
+          <h1
+            className="text-[28px] font-bold tracking-tight leading-none"
+            style={{ color: '#F5C518', letterSpacing: '-0.02em' }}
+          >
+            HILLSCHECK
+          </h1>
+          <p className="text-[14px] mt-2" style={{ color: 'rgba(255,255,255,0.35)' }}>
+            Войди в свой аккаунт
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="card space-y-4">
+        {/* Form */}
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4"
+          style={{
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.10)',
+            borderRadius: '28px',
+            padding: '28px',
+            backdropFilter: 'blur(48px) saturate(1.8)',
+            WebkitBackdropFilter: 'blur(48px) saturate(1.8)',
+            boxShadow: 'inset 0 1px 0 rgba(245,197,24,0.10), 0 24px 64px rgba(0,0,0,0.6)',
+          }}
+        >
           {error && (
-            <div className="text-red-400 text-sm text-center bg-red-900/20 rounded-lg py-2 px-3">
+            <div
+              className="text-[13px] text-center rounded-2xl py-2.5 px-4"
+              style={{ color: '#FF453A', background: 'rgba(255,69,58,0.12)', border: '1px solid rgba(255,69,58,0.2)' }}
+            >
               {error}
             </div>
           )}
 
-          <div>
-            <label className="block text-xs text-gray-400 mb-1 uppercase tracking-wider">Email</label>
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.35)' }}>
+              Email
+            </label>
             <input
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-rpg-gold"
+              className="input"
               placeholder="grisha@example.com"
             />
           </div>
 
-          <div>
-            <label className="block text-xs text-gray-400 mb-1 uppercase tracking-wider">Пароль</label>
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.35)' }}>
+              Пароль
+            </label>
             <input
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
               minLength={8}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-rpg-gold"
+              className="input"
               placeholder="••••••••"
             />
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-rpg-gold text-gray-950 font-bold py-2 rounded-lg text-sm hover:brightness-110 transition disabled:opacity-50"
-          >
-            {loading ? 'Вход...' : 'Войти'}
+          <button type="submit" disabled={loading} className="btn-primary w-full mt-2">
+            {loading ? 'Вход…' : 'Войти'}
           </button>
 
-          <p className="text-center text-xs text-gray-500">
+          <p className="text-center text-[13px]" style={{ color: 'rgba(255,255,255,0.30)' }}>
             Нет аккаунта?{' '}
-            <Link to="/register" className="text-rpg-gold hover:underline">
+            <Link to="/register" className="font-semibold transition-opacity hover:opacity-80" style={{ color: '#F5C518' }}>
               Зарегистрироваться
             </Link>
           </p>

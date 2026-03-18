@@ -5,7 +5,7 @@ COPY web/package*.json ./
 RUN npm ci
 COPY web/src ./src
 COPY web/public ./public
-COPY web/index.html web/vite.config.ts web/tailwind.config.ts web/tsconfig.json ./
+COPY web/index.html web/vite.config.ts web/tailwind.config.ts web/tsconfig.json web/postcss.config.js ./
 RUN npm run build
 
 # Stage 2: Build Go binary

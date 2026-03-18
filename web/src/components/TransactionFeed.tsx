@@ -1,30 +1,30 @@
 import type { Transaction } from '../api/client'
 
 const CATEGORY_META: Record<string, { icon: string; color: string }> = {
-  food:          { icon: '🍕', color: '#ef4444' },
-  learning:      { icon: '📖', color: '#34d399' },
-  health:        { icon: '💊', color: '#3b82f6' },
-  sports:        { icon: '🏋️', color: '#a78bfa' },
-  entertainment: { icon: '🎮', color: '#f5c518' },
-  shopping:      { icon: '🛍️', color: '#fb923c' },
-  transport:     { icon: '🚕', color: '#94a3b8' },
-  cafe:          { icon: '☕', color: '#d97706' },
-  travel:        { icon: '✈️', color: '#22d3ee' },
-  xp:            { icon: '⭐', color: '#f5c518' },
-  hp:            { icon: '❤️', color: '#ef4444' },
-  mana:          { icon: '💎', color: '#3b82f6' },
-  strength:      { icon: '⚔️', color: '#a78bfa' },
-  intellect:     { icon: '📖', color: '#34d399' },
-  luck:          { icon: '🍀', color: '#fbbf24' },
+  food:          { icon: '🍕', color: '#FF453A' },
+  learning:      { icon: '📖', color: '#30D158' },
+  health:        { icon: '💊', color: '#0A84FF' },
+  sports:        { icon: '🏋️', color: '#BF5AF2' },
+  entertainment: { icon: '🎮', color: '#FFD60A' },
+  shopping:      { icon: '🛍️', color: '#FF9F0A' },
+  transport:     { icon: '🚕', color: '#5AC8FA' },
+  cafe:          { icon: '☕', color: '#FF9F0A' },
+  travel:        { icon: '✈️', color: '#5AC8FA' },
+  xp:            { icon: '⭐', color: '#FFD60A' },
+  hp:            { icon: '❤️', color: '#FF453A' },
+  mana:          { icon: '💎', color: '#0A84FF' },
+  strength:      { icon: '⚔️', color: '#BF5AF2' },
+  intellect:     { icon: '📖', color: '#30D158' },
+  luck:          { icon: '🍀', color: '#FFD60A' },
 }
 
 function getCategoryMeta(category?: string) {
-  if (!category) return { icon: '💳', color: '#6b7280' }
+  if (!category) return { icon: '💳', color: 'rgba(255,255,255,0.3)' }
   const key = category.toLowerCase()
   for (const [k, v] of Object.entries(CATEGORY_META)) {
     if (key.includes(k)) return v
   }
-  return { icon: '💳', color: '#6b7280' }
+  return { icon: '💳', color: 'rgba(255,255,255,0.3)' }
 }
 
 function formatAmount(cents: number): string {
@@ -44,52 +44,62 @@ interface Props {
 
 export function TransactionFeed({ transactions }: Props) {
   return (
-    <div className="card space-y-3">
-      <h2 className="section-label">💳 Последние транзакции</h2>
+    <div className="glass p-5 space-y-3">
+      <h2 className="section-label">Transactions</h2>
 
       {transactions.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-gray-700/50 p-8 text-center">
-          <p className="text-4xl mb-3">📂</p>
-          <p className="text-gray-500 text-sm">Транзакций ещё нет</p>
-          <p className="text-gray-700 text-xs mt-1">Импортируй CSV из Тинькофф или Сбер</p>
+        <div
+          className="rounded-2xl p-8 text-center"
+          style={{ border: '1px dashed rgba(255,255,255,0.10)', background: 'rgba(255,255,255,0.02)' }}
+        >
+          <p className="text-3xl mb-3 float">📂</p>
+          <p className="text-[13px] text-white/40">Транзакций ещё нет</p>
+          <p className="text-[11px] text-white/20 mt-1">Импортируй CSV из Тинькофф или Сбер</p>
         </div>
       ) : (
-        <ul className="space-y-1.5">
+        <ul className="space-y-1">
           {transactions.map((tx) => {
             const meta = getCategoryMeta(tx.clean_category)
             const isPending = tx.status === 'pending'
+            const isDebit = tx.amount < 0
             return (
-              <li key={tx.id}
-                className="flex items-center gap-3 rounded-xl bg-gray-800/40 border border-gray-800/60 px-3 py-2.5 hover:bg-gray-800/70 hover:border-gray-700/60 transition-all cursor-default"
+              <li
+                key={tx.id}
+                className="flex items-center gap-3 rounded-2xl px-3.5 py-3 transition-all cursor-default group"
+                style={{ background: 'rgba(255,255,255,0.03)' }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
               >
-                {/* Category icon */}
-                <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 text-lg"
-                  style={{ background: `${meta.color}15` }}>
+                {/* Icon */}
+                <div
+                  className="w-9 h-9 rounded-[11px] flex items-center justify-center shrink-0 text-[18px]"
+                  style={{ background: `${meta.color}18` }}
+                >
                   {meta.icon}
                 </div>
 
-                {/* Description + category */}
+                {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-100 truncate leading-tight">
+                  <p className="text-[14px] font-medium text-white/85 truncate leading-tight">
                     {tx.original_description || 'Операция'}
                   </p>
-                  <p className="text-xs mt-0.5">
+                  <p className="text-[11px] mt-0.5">
                     {isPending ? (
-                      <span className="text-yellow-500/80 pulse-dot">⚙ Классифицируется…</span>
+                      <span className="pulse-dot" style={{ color: '#FF9F0A' }}>⚙ Классифицируется…</span>
                     ) : (
-                      <span style={{ color: meta.color + 'cc' }}>
-                        {tx.clean_category || '—'}
-                      </span>
+                      <span style={{ color: `${meta.color}99` }}>{tx.clean_category || '—'}</span>
                     )}
                   </p>
                 </div>
 
-                {/* Amount + date */}
+                {/* Amount */}
                 <div className="text-right shrink-0">
-                  <p className={`text-sm font-semibold font-mono ${tx.amount < 0 ? 'text-red-400' : 'text-green-400'}`}>
+                  <p className={`text-[14px] font-semibold font-mono ${isDebit ? 'text-[#FF453A]' : 'text-[#30D158]'}`}>
                     {formatAmount(tx.amount)}
                   </p>
-                  <p className="text-[10px] text-gray-600 mt-0.5">{formatDate(tx.created_at)}</p>
+                  <p className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.25)' }}>
+                    {formatDate(tx.created_at)}
+                  </p>
                 </div>
               </li>
             )
