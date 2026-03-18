@@ -42,7 +42,7 @@ func (m *mockTokenStore) Delete(_ context.Context, token string) error {
 
 func registerTestUser(t *testing.T, repo *mockUserRepo, email, password string) {
 	t.Helper()
-	uc := usecase.NewRegisterUser(repo, &mockGameRepo{})
+	uc := usecase.NewRegisterUser(repo, &mockGameRepo{}, &mockAccountRepo{})
 	if _, err := uc.Execute(context.Background(), usecase.RegisterInput{
 		Name: "Test User", Email: email, Password: password,
 	}); err != nil {

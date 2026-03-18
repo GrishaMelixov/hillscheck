@@ -68,6 +68,24 @@ func (m *mockUserRepo) Update(_ context.Context, u domain.User) (domain.User, er
 	return u, nil
 }
 
+type mockAccountRepo struct{}
+
+func (m *mockAccountRepo) Create(_ context.Context, _ port.CreateAccountParams) (domain.Account, error) {
+	return domain.Account{ID: "acc-1"}, nil
+}
+
+func (m *mockAccountRepo) GetByID(_ context.Context, _ string) (domain.Account, error) {
+	return domain.Account{}, domain.ErrNotFound
+}
+
+func (m *mockAccountRepo) ListByUser(_ context.Context, _ string) ([]domain.Account, error) {
+	return []domain.Account{{ID: "acc-1"}}, nil
+}
+
+func (m *mockAccountRepo) UpdateBalance(_ context.Context, _ string, _ int64) (domain.Account, error) {
+	return domain.Account{}, nil
+}
+
 type mockGameRepo struct{}
 
 func (m *mockGameRepo) CreateProfile(_ context.Context, _ string) (domain.GameProfile, error) {
@@ -89,7 +107,7 @@ func (m *mockGameRepo) ListEvents(_ context.Context, _ string, _ int) ([]domain.
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 func TestRegisterUser_HappyPath(t *testing.T) {
-	uc := usecase.NewRegisterUser(newMockUserRepo(), &mockGameRepo{})
+	uc := usecase.NewRegisterUser(newMockUserRepo(), &mockGameRepo{}, &mockAccountRepo{})
 
 	out, err := uc.Execute(context.Background(), usecase.RegisterInput{
 		Name:     "Grisha",
@@ -117,7 +135,7 @@ func TestRegisterUser_HappyPath(t *testing.T) {
 
 func TestRegisterUser_DuplicateEmail(t *testing.T) {
 	repo := newMockUserRepo()
-	uc := usecase.NewRegisterUser(repo, &mockGameRepo{})
+	uc := usecase.NewRegisterUser(repo, &mockGameRepo{}, &mockAccountRepo{})
 
 	input := usecase.RegisterInput{
 		Name:     "Grisha",
@@ -137,7 +155,7 @@ func TestRegisterUser_DuplicateEmail(t *testing.T) {
 
 func TestRegisterUser_EmailNormalized(t *testing.T) {
 	repo := newMockUserRepo()
-	uc := usecase.NewRegisterUser(repo, &mockGameRepo{})
+	uc := usecase.NewRegisterUser(repo, &mockGameRepo{}, &mockAccountRepo{})
 
 	out, err := uc.Execute(context.Background(), usecase.RegisterInput{
 		Name:     "Grisha",

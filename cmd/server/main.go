@@ -104,7 +104,7 @@ func main() {
 	getProfile := usecase.NewGetProfile(gameRepo)
 	getQuests  := usecase.NewGetQuests(gameRepo, txRepo, accountRepo)
 
-	registerUC := usecase.NewRegisterUser(userRepo, gameRepo)
+	registerUC := usecase.NewRegisterUser(userRepo, gameRepo, accountRepo)
 	loginUC    := usecase.NewLoginUser(userRepo, jwtSvc, tokenStore)
 	refreshUC  := usecase.NewRefreshToken(userRepo, jwtSvc, tokenStore)
 	logoutUC   := usecase.NewLogout(tokenStore)

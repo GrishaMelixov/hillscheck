@@ -134,4 +134,35 @@ export interface Transaction {
 
 export const fetchProfile = () => get<Profile>('/api/v1/profile')
 export const fetchQuests = () => get<{ quests: Quest[] }>('/api/v1/quests')
-export const fetchTransactions = () => get<{ transactions: Transaction[] }>('/api/v1/transactions')
+export const fetchTransactions = (accountId: string) =>
+  get<{ transactions: Transaction[] }>(`/api/v1/transactions?account_id=${accountId}`)
+
+// ── Accounts ──────────────────────────────────────────────────────────────────
+
+export interface Account {
+  id: string
+  user_id: string
+  name: string
+  type: string
+  balance: number   // cents
+  currency: string
+}
+
+export const fetchAccounts = () => get<{ accounts: Account[] }>('/api/v1/accounts')
+
+// ── Import ────────────────────────────────────────────────────────────────────
+
+export interface ImportTxRow {
+  external_id: string
+  amount: number          // cents (int64)
+  mcc?: number
+  original_description: string
+  occurred_at: string     // RFC3339
+}
+
+export function importTransactions(accountId: string, rows: ImportTxRow[]) {
+  return post<{ created: number; duplicates: number }>(
+    '/api/v1/transactions/import',
+    { account_id: accountId, transactions: rows },
+  )
+}

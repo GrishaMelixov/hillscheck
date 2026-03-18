@@ -135,6 +135,23 @@ func (h *TransactionHandler) List(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, http.StatusOK, txs)
 }
 
+func (h *TransactionHandler) ListAccounts(w http.ResponseWriter, r *http.Request) {
+	userID := mw.UserIDFromCtx(r.Context())
+	if userID == "" {
+		jsonError(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	accounts, err := h.accounts.ListByUser(r.Context(), userID)
+	if err != nil {
+		h.log.Error("list accounts", zap.Error(err))
+		jsonError(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	jsonOK(w, http.StatusOK, map[string]any{"accounts": accounts})
+}
+
 func jsonOK(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)

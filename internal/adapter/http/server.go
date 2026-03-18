@@ -54,6 +54,7 @@ func NewRouter(
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(mw.NewAuth(jwt))
 
+		r.Get("/accounts", h.Transaction.ListAccounts)
 		r.Post("/transactions/import", h.Transaction.Import)
 		r.Get("/transactions", h.Transaction.List)
 

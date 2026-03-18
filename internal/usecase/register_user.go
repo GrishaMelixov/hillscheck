@@ -13,12 +13,13 @@ import (
 )
 
 type RegisterUser struct {
-	users port.UserRepository
-	game  port.GameRepository
+	users    port.UserRepository
+	game     port.GameRepository
+	accounts port.AccountRepository
 }
 
-func NewRegisterUser(users port.UserRepository, game port.GameRepository) *RegisterUser {
-	return &RegisterUser{users: users, game: game}
+func NewRegisterUser(users port.UserRepository, game port.GameRepository, accounts port.AccountRepository) *RegisterUser {
+	return &RegisterUser{users: users, game: game, accounts: accounts}
 }
 
 type RegisterInput struct {
@@ -61,6 +62,16 @@ func (uc *RegisterUser) Execute(ctx context.Context, in RegisterInput) (Register
 	// Bootstrap game profile
 	if _, err := uc.game.CreateProfile(ctx, user.ID); err != nil {
 		return RegisterOutput{}, fmt.Errorf("create game profile: %w", err)
+	}
+
+	// Create a default debit account so the user can import transactions immediately
+	if _, err := uc.accounts.Create(ctx, port.CreateAccountParams{
+		UserID:   user.ID,
+		Name:     "Основной счёт",
+		Type:     domain.AccountTypeDebit,
+		Currency: "RUB",
+	}); err != nil {
+		return RegisterOutput{}, fmt.Errorf("create default account: %w", err)
 	}
 
 	return RegisterOutput{User: user}, nil

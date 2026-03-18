@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { Avatar } from '../components/Avatar'
 import { TransactionFeed } from '../components/TransactionFeed'
 import { QuestList } from '../components/QuestList'
+import ImportModal from '../components/ImportModal'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { useAuth } from '../context/AuthContext'
-import { fetchProfile, fetchQuests, fetchTransactions, getAccessToken } from '../api/client'
+import { fetchProfile, fetchQuests, fetchAccounts, fetchTransactions, getAccessToken } from '../api/client'
 import type { Profile, Quest, Transaction } from '../api/client'
 
 const SKILL_CATEGORIES = [
@@ -21,34 +22,55 @@ export default function Dashboard() {
   const { logout, user } = useAuth()
   const navigate = useNavigate()
 
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [quests, setQuests] = useState<Quest[]>([])
+  const [profile, setProfile]           = useState<Profile | null>(null)
+  const [quests, setQuests]             = useState<Quest[]>([])
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [defaultAccountId, setDefaultAccountId] = useState<string | null>(null)
   const [loadingProfile, setLoadingProfile] = useState(true)
-  const [error, setError] = useState('')
+  const [error, setError]               = useState('')
+  const [showImport, setShowImport]     = useState(false)
 
-  // Load initial data
-  useEffect(() => {
-    Promise.all([fetchProfile(), fetchQuests(), fetchTransactions()])
-      .then(([p, q, t]) => {
-        setProfile(p)
-        setQuests(q.quests ?? [])
-        setTransactions(t.transactions ?? [])
-      })
-      .catch(() => setError('Не удалось загрузить данные'))
-      .finally(() => setLoadingProfile(false))
+  const loadTransactions = useCallback(async (accountId: string) => {
+    try {
+      const t = await fetchTransactions(accountId)
+      setTransactions(t.transactions ?? [])
+    } catch {
+      // Non-fatal — transactions may just be empty
+    }
   }, [])
+
+  const loadAll = useCallback(async () => {
+    try {
+      const [p, q, accounts] = await Promise.all([fetchProfile(), fetchQuests(), fetchAccounts()])
+      setProfile(p)
+      setQuests(q.quests ?? [])
+      const firstAccount = accounts.accounts?.[0]
+      if (firstAccount) {
+        setDefaultAccountId(firstAccount.id)
+        await loadTransactions(firstAccount.id)
+      }
+    } catch {
+      setError('Не удалось загрузить данные')
+    } finally {
+      setLoadingProfile(false)
+    }
+  }, [loadTransactions])
+
+  useEffect(() => { loadAll() }, [loadAll])
 
   // Real-time profile updates via WebSocket
   const handleWsMessage = useCallback((type: string, payload: unknown) => {
     if (type === 'profile_update') setProfile(payload as Profile)
   }, [])
-
   useWebSocket(getAccessToken(), handleWsMessage)
 
   const handleLogout = async () => {
     await logout()
     navigate('/login')
+  }
+
+  const handleImported = () => {
+    if (defaultAccountId) loadTransactions(defaultAccountId)
   }
 
   // Build skill-tree counts from real transactions
@@ -83,6 +105,12 @@ export default function Dashboard() {
           {profile && (
             <span className="text-xs text-gray-500">Level {profile.level} Adventurer</span>
           )}
+          <button
+            onClick={() => setShowImport(true)}
+            className="text-xs bg-rpg-gold text-gray-950 font-bold px-3 py-1.5 rounded-lg hover:brightness-110 transition"
+          >
+            + Импорт
+          </button>
           <button
             onClick={handleLogout}
             className="text-xs text-gray-500 hover:text-gray-300 transition"
@@ -119,8 +147,27 @@ export default function Dashboard() {
           </div>
 
           <TransactionFeed transactions={transactions} />
+
+          {transactions.length === 0 && !loadingProfile && (
+            <div className="card text-center py-10">
+              <p className="text-gray-500 text-sm mb-3">Транзакций пока нет</p>
+              <button
+                onClick={() => setShowImport(true)}
+                className="text-xs bg-rpg-gold text-gray-950 font-bold px-4 py-2 rounded-lg hover:brightness-110 transition"
+              >
+                Импортировать CSV
+              </button>
+            </div>
+          )}
         </div>
       </main>
+
+      {showImport && (
+        <ImportModal
+          onClose={() => setShowImport(false)}
+          onImported={handleImported}
+        />
+      )}
     </div>
   )
 }
